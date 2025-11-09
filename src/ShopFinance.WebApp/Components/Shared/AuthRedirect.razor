@@ -1,0 +1,36 @@
+﻿
+<div class="auth-redirect">
+    <LoadingSpinner />
+</div>
+
+@code {
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (firstRender)
+        {
+            _themeState.LoadTheme();
+            // Verificar el estado de autenticación
+            var authState = await _stateProvider.GetAuthenticationStateAsync();
+
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                // Obtener la URL actual para redirigir después del login
+                var currentUrl = _navManager.ToBaseRelativePath(_navManager.Uri);
+                var returnUrl = string.IsNullOrEmpty(currentUrl) || currentUrl == "/"
+                    ? string.Empty
+                    : $"?returnUrl={Uri.EscapeDataString(currentUrl)}";
+
+                // Redirigir al login
+                _navManager.NavigateTo($"/login{returnUrl}", true);
+            }
+        }
+    }
+}
+}

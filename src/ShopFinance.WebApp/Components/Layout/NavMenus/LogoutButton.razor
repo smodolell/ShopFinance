@@ -1,0 +1,14 @@
+﻿@using BitzArt.Blazor.Auth;
+@using ShopFinance.Infrastructure.Services;
+<MudNavLink OnClick="Logout" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ExitToApp">Cerrar Sesión</MudNavLink>
+@code {
+    [Inject] IUserService<SignInPayload> UserService { get; set; } = null!;
+
+    private async Task Logout()
+    {
+
+        await UserService.SignOutAsync();
+
+        _navManager.NavigateTo("/login", true);
+    }
+}

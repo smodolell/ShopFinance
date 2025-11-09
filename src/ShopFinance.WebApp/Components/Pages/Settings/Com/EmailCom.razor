@@ -1,0 +1,91 @@
+﻿@using ShopFinance.Application.Common.Models.Configurations
+@using ShopFinance.Application.Common.Interfaces
+@inject IConfigurationService _configurationService
+@if (_model != null)
+{
+    <EditForm Model="_model" OnValidSubmit="EmailConfigSubmit" style="width:100%;">
+
+        <DataAnnotationsValidator />
+        <MudTextField Class="mt-4"
+                      @bind-Value="_model.SmtpServer"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Placeholder="Server"
+                      For="@(() => _model.SmtpServer)"
+                      Label="Smtp Server">
+        </MudTextField>
+        <MudNumericField Class="mt-4"
+                         @bind-Value="_model.SmtpPort"
+                         Label="Port"
+                         Variant="Variant.Outlined"
+                         Margin="Margin.Dense" />
+        <MudTextField Class="mt-4"
+                      @bind-Value="_model.FromAddress"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Placeholder="FromAddress"
+                      For="@(() => _model.FromAddress)"
+                      Label="FromAddress">
+        </MudTextField>
+        <MudTextField Class="mt-4"
+                      @bind-Value="_model.FromAddressTitle"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Placeholder="FromAddressTitle"
+                      For="@(() => _model.FromAddressTitle)"
+                      Label="FromAddressTitle">
+        </MudTextField>
+        <MudTextField Class="mt-4"
+                      @bind-Value="_model.SmtpUsername"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Placeholder="Smtp Username"
+                      For="@(() => _model.SmtpUsername)"
+                      Label="Smtp Username">
+        </MudTextField>
+        <MudTextField Class="mt-4"
+                      @bind-Value="_model.SmtpPassword"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Placeholder="Smtp Password"
+                      For="@(() => _model.SmtpPassword)"
+                      Label="Smtp Password">
+        </MudTextField>
+        <div class="d-flex mt-4">
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       ButtonType="ButtonType.Submit"
+                       StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+        </div>
+    </EditForm>
+}
+
+@code {
+
+    private EmailConfig? _model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetSettingsAsync();
+    }
+
+
+    private async Task GetSettingsAsync()
+    {
+        if (_model == null)
+        {
+            _model = await _configurationService.GetEmailConfigAsync();
+        }
+    }
+
+    private async Task EmailConfigSubmit()
+    {
+        if (_model == null) return;
+        await _configurationService.SaveEmailConfigAsync(_model);
+
+        _snackbarService.Add("¡Guardado exitosamente!", Severity.Success);
+    }
+
+}

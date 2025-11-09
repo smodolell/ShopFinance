@@ -1,0 +1,14 @@
+﻿@rendermode InteractiveServer
+
+<MudThemeProvider IsDarkMode="@_themeState.IsDark" Theme="@_themeState.MudTheme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@code {
+    protected override void OnInitialized()
+    {
+        _themeState.IsDarkChangeEvent += StateHasChanged;
+        _themeState.ThemeChangeEvent += StateHasChanged;
+    }
+}

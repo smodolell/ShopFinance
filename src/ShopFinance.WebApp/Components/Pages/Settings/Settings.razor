@@ -1,0 +1,64 @@
+﻿@attribute [Route(PageRoute.Settings)]
+@attribute [AccessPoint(AppMenu.MenuSystem, "Configuración")]
+@rendermode RenderMode.InteractiveServer
+@using ShopFinance.WebApp.Components.Pages.Settings.Com
+<PageHeader Title="Configuración del Sistema" Icon="@AppMenu.MenuSystemIcon">
+</PageHeader>
+
+
+<div class="d-flex flex-column" style="height:100%;">
+    <div class="flex-1 d-flex border rounded" style="overflow:auto;border-color:var(--mud-palette-lines-default)">
+
+        <div class="flex-none" style="width:340px;overflow:auto;">
+            <MudList T="string" @bind-SelectedItem="SelectedItem" @bind-SelectedValue="SelectedValue">
+                @foreach (var group in SettingGroups)
+                {
+                    <MudListItem Value="@group.Name">
+                        <div class="d-flex">
+                            <MudIcon Icon="@group.Icon" Class="mr-2"></MudIcon>
+                            <MudText>
+                                @group.Name
+                            </MudText>
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+        </div>
+        <MudDivider Vertical="true" Class="flex-none" />
+        <div class="flex-1 mx-2">
+            <DynamicComponent Type="@SettingComDic[SelectedValue.ToString()!]" />
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+
+    private MudListItem<string>? SelectedItem;
+
+    private string SelectedValue = "Configuración JWT";
+
+    private List<SettingGroupsItem> SettingGroups = [
+        new SettingGroupsItem{ Name = "Configuración JWT",Icon = Icons.Material.Filled.Security },
+        new SettingGroupsItem{ Name = "Configuración Email",Icon = Icons.Material.Filled.Email }
+    ];
+
+    private Dictionary<string, Type> SettingComDic = new Dictionary<string, Type>
+{
+        {"Configuración JWT",typeof(JwtCom)},
+        {"Configuración Email",typeof(EmailCom)}
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private class SettingGroupsItem
+    {
+        public string Name { get; set; } = "";
+        public string Icon { get; set; } = "";
+    }
+}

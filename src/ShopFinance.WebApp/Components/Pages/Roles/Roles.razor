@@ -1,0 +1,243 @@
+﻿@attribute [Route(PageRoute.Roles)]
+@attribute [AccessPoint(AppMenu.MenuSecurity, "Roles")]
+@using ShopFinance.Application.Features.Roles.Commands
+@using ShopFinance.Application.Features.Roles.DTOs
+@using ShopFinance.Application.Features.Roles.Queries
+@using ShopFinance.WebApp.Components.Pages.Roles.Components
+
+<PageHeader Title="Roles" Icon="@AppMenu.MenuSecurityIcon">
+    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+</PageHeader>
+
+@if (_filtersVisible)
+{
+    <MudExpansionPanels Outlined="true" Dense="true" Elevation="0">
+        <MudExpansionPanel @bind-Expanded="_advancedSearchExpanded">
+            <TitleContent>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Primary" Size="Size.Small" />
+                    <MudText Typo="Typo.h6" Class="font-weight-medium">Filtros de búsqueda</MudText>
+                </MudStack>
+            </TitleContent>
+            <ChildContent>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudTextField @bind-Value="_filter.SearchText"
+                                      Label="Buscar proyecto..."
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="12" md="12">
+                        <MudStack Row="true" Justify="Justify.FlexEnd">
+                            <MudButton Variant="Variant.Text"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.DeleteOutline"
+                                       OnClick="ClearFilters">
+                                Limpiar
+                            </MudButton>
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Search"
+                                       OnClick="ApplyFilters">
+                                Filtrar
+                            </MudButton>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </ChildContent>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+
+}
+
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             Class="mt-2"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="dataGridRef"
+             Loading="_loading"
+             T="RoleDto">
+    <ToolBarContent>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.End">
+            <MudToolBar Dense WrapContent="true" Class="py-1 px-0">
+                <MudButton Disabled="@_loading"
+                           OnClick="@(() => ApplyFilters())"
+                           StartIcon="@Icons.Material.Outlined.Refresh">
+                    @AppStrings.Refresh
+                </MudButton>
+
+                <MudButton StartIcon="@Icons.Material.Outlined.Add"
+                           OnClick="AddClick">
+                    @AppStrings.New
+                </MudButton>
+                @*<MudMenu TransformOrigin="Origin.BottomRight"
+                             AnchorOrigin="Origin.BottomRight"
+                             EndIcon="@Icons.Material.Filled.MoreVert"
+                             Label="@AppStrings.More">
+                        <MudMenuItem Disabled="@(_selectedItems.Count != 1)" OnClick="OnCloneProduct">
+                            @AppStrings.Clone
+                        </MudMenuItem>
+                        <MudMenuItem Disabled="@(!(_selectedItems.Count > 0))"
+                                     OnClick="OnDeleteSelectedProducts">
+                            @AppStrings.Delete
+                        </MudMenuItem>
+                        <MudMenuItem Disabled="@_exporting" OnClick="OnExport">
+                            @AppStrings.Export
+                        </MudMenuItem>
+                        <MudMenuItem Disabled="@_pdfExporting" OnClick="OnExportPDF">
+                            @AppStrings.ExportPDF
+                        </MudMenuItem>
+                        <MudMenuItem>
+                            <MudFileUpload T="IBrowserFile"
+                                           FilesChanged="OnFileImport"
+                                           Accept=".xlsx">
+                                <ActivatorContent>
+                                    <MudButton Class="pa-0 ma-0"
+                                               Style="font-weight:400;text-transform:none;"
+                                               Variant="Variant.Text"
+                                               Disabled="@_uploading">
+                                        @AppStrings.Import
+                                    </MudButton>
+                                </ActivatorContent>
+                            </MudFileUpload>
+                        </MudMenuItem>
+                    </MudMenu>*@
+            </MudToolBar>
+
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Title="Name" Property="x=>x.Name" />
+        <PropertyColumn Title="Description" Property="x=>x.Description" />
+        <TemplateColumn HeaderStyle="white-space:nowrap;width:50px;" StickyRight="true" Resizable="false" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.Center">
+                    <MudIconButton Size="@MudBlazor.Size.Small"
+                                   Icon="@Icons.Material.Outlined.Search"
+                                   Color="Color.Success"
+                                   OnClick="()=>DetailClick(context.Item.Id)" />
+                    @*   <MudIconButton Size="@MudBlazor.Size.Small"
+                        Icon="@Icons.Material.Outlined.Edit"
+                        Color="Color.Primary"
+                        OnClick="()=>EditClick(context.Item.Id)" />*@
+                    <MudIconButton Size="@MudBlazor.Size.Small"
+                                   Icon="@Icons.Material.Outlined.Delete"
+                                   Color="Color.Error"
+                                   OnClick="()=>DeleteClick(context.Item)" />
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+
+    <PagerContent>
+        <MudDataGridPager T="RoleDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText>No hay registros de <strong>Proyectos</strong></MudText>
+    </NoRecordsContent>
+</MudDataGrid>
+
+@code {
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+{
+        new BreadcrumbItem("Roles", href: null, icon: Icons.Material.Filled.Home,disabled: true),
+    };
+    private DialogOptions _optionsDialogs = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+    private GetRolesQuery _filter = new GetRolesQuery();
+
+    private MudDataGrid<RoleDto> dataGridRef = null!;
+    private bool _filtersVisible = true;
+    private bool _advancedSearchExpanded;
+    private bool _loading = true;
+
+    private async Task<GridData<RoleDto>> GetTableData(GridState<RoleDto> gridState)
+    {
+        _loading = true;
+        _filter.Page = (gridState.Page + 1);
+
+
+        _filter.SortColumn = nameof(RoleDto.Name);
+        _filter.SortDescending = true;
+        _filter.PageSize = gridState.PageSize;
+        var _sortDefinitions = gridState.SortDefinitions.FirstOrDefault();
+        if (_sortDefinitions != null)
+        {
+            _filter.SortColumn = _sortDefinitions.SortBy;
+            _filter.SortDescending = _sortDefinitions.Descending;
+        }
+        var paginatedList = await _queryMediator.QueryAsync(_filter);
+        _loading = false;
+        return new GridData<RoleDto>()
+        {
+            TotalItems = Convert.ToInt32(paginatedList.PagedInfo.TotalRecords),
+            Items = paginatedList.Value
+        };
+    }
+
+    private async Task AddClick()
+    {
+        var parameters = new DialogParameters { };
+        var dialog = await _dialogService.ShowAsync<CreateRoleDialog>("Nuevo CuentaBancaria", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            await dataGridRef.ReloadServerData();
+        }
+
+    }
+    private void DetailClick(Guid id)
+    {
+        _navManager.NavigateTo("." + PageRoute.DetailRole + $"/{id}", true);
+    }
+
+    private async Task DeleteClick(RoleDto item)
+    {
+        await _dialogService.ShowConfirmDialog($"¿Desea eliminar el Proyecto {item.Name}?", "Eliminar Proyecto ", async (e) =>
+        {
+            try
+            {
+                var result = await _commandMediator.SendAsync(new DeleteRoleCommand
+                {
+                    RoleId = item.Id
+                });
+                if (result.IsSuccess)
+                {
+                    await dataGridRef.ReloadServerData();
+                    _snackbarService.Add(result.SuccessMessage, MudBlazor.Severity.Success);
+                }
+                else
+                {
+                    _snackbarService.Add(result.Errors.FirstOrDefault() ?? "", MudBlazor.Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Add(ex.Message, MudBlazor.Severity.Normal);
+            }
+        });
+    }
+
+
+    private void ApplyFilters()
+    {
+
+        dataGridRef.ReloadServerData();
+    }
+
+    private void ClearFilters()
+    {
+        _filter = new GetRolesQuery();
+        dataGridRef.ReloadServerData();
+    }
+}
+}

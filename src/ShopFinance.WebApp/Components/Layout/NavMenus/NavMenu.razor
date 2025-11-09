@@ -1,0 +1,26 @@
+﻿<MudDrawer @bind-Open="_layoutState.NavIsOpen"
+           ClipMode="DrawerClipMode.Never"
+           Elevation="2">
+    <MudDrawerHeader Class="d-flex align-center">
+        @if (_themeState.IsDark)
+        {
+            <MudImage Src="/images/header-logo-dark.png"  Width="170" Height="60" />
+        }
+        else
+        {
+            <MudImage Src="/images/header-logo.png"  Width="170" Height="60"/>
+        }
+    </MudDrawerHeader>
+    <MudNavMenu Margin="Margin.Dense" Color="Color.Primary" Rounded="true" Class="pa-2">
+        @if (NavMenuItems == null)
+        {
+            <p><em>Cargando...</em></p>
+        }
+        else
+        {
+            <NavItemMenu NavMenuItems="NavMenuItems" NavTo="NavTo" />
+        }
+        <LogoutButton></LogoutButton>
+    </MudNavMenu>
+</MudDrawer>
+

@@ -1,0 +1,31 @@
+@using ShopFinance.WebApp.Components.Layout.Culture
+@using ShopFinance.WebApp.Components.Layout.NavMenus
+@using ShopFinance.WebApp.Components.Layout.Themes
+@using ShopFinance.WebApp.Components.Layout.UserAvatar
+@using MudBlazor.Utilities
+
+
+<MudAppBar Elevation="1" Dense="true" Color="Color.Primary" Style="background:var(--mud-palette-surface);transform:translateX(1px);">
+
+    <NavOpenButton />
+    <MudSpacer />
+
+    <div class="d-none d-md-flex">
+        <CultureIcon />
+        <DarkToggleButton></DarkToggleButton>
+        <PrimaryChangeButton />
+        @*  <NotificationIcon />*@
+    </div>
+
+    <UserMenuAvatar />
+</MudAppBar>
+
+<NavMenu></NavMenu>
+
+<MudMainContent Style="height:100vh;">
+    <div class="pa-2 d-flex flex-column" style="height:100%;overflow:auto;">
+        @Child
+    </div>
+</MudMainContent>
+
+

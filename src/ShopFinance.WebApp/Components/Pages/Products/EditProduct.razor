@@ -1,0 +1,165 @@
+﻿@attribute [Route(PageRoute.EditProduct + "/{ProductId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Editar Product", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Products.Commands
+@using ShopFinance.Application.Features.Products.DTOs
+@using ShopFinance.Application.Features.Products.Queries
+
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Editar Producto" Icon="@AppMenu.MenuCatalogIcon">
+    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+</PageHeader>
+
+@if (_model != null)
+{
+    <EditForm Model="_model" OnValidSubmit="Save">
+        <FluentValidationValidator @ref="_fluentValidationValidator" />
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect Margin="Margin.Dense" T="int?"
+                           @bind-Value="_model.CategoryId" 
+                           For="@(() => _model.CategoryId)"
+                           Label="Categoria" 
+                           Variant="Variant.Outlined">
+                    @if (_listCatetory != null)
+                    {
+                        @foreach (var item in _listCatetory)
+                        {
+                            <MudSelectItem T="int?" Value="@(Convert.ToInt32(item.Value))">@item.Text </MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <MudTextField @bind-Value="_model.Name"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="Nombre del Producto"
+                              For="@(() => _model.Name)">
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <MudTextField @bind-Value="_model.Description"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="Descripción"
+                              For="@(() => _model.Description)">
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <MudNumericField @bind-Value="_model.Price"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Label="Precio"
+                                 For="@(() => _model.Price)">
+                </MudNumericField>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <MudNumericField @bind-Value="_model.Stock"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Label="Stock"
+                                 For="@(() => _model.Stock)">
+                </MudNumericField>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <MudNumericField @bind-Value="_model.StockMin"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Label="StockMin"
+                                 For="@(() => _model.StockMin)">
+                </MudNumericField>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <MudStack Justify="Justify.FlexEnd">
+                    <MudButton Variant="Variant.Filled"
+                               ButtonType="ButtonType.Submit"
+                               Color="Color.Primary"
+                               Class="ml-auto">
+                        Guardar
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+
+    private UpdateProductCommand? _model;
+    private List<SelectListItemDto>? _listCatetory;
+    private FluentValidationValidator? _fluentValidationValidator;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_listCatetory == null)
+        {
+            _listCatetory = await _selectListService.Categories();
+        }
+        if (_model == null)
+        {
+            await InitialData();
+        }
+    }
+
+    private async Task InitialData()
+    {
+        var result = await _queryMediator.QueryAsync(new GetProductByIdQuery
+        {
+            ProductId = ProductId
+        });
+
+        if (result.IsSuccess)
+        {
+            var product = result.Value;
+            _model = new UpdateProductCommand
+            {
+                ProductId = product.ProductId,
+                CategoryId = product.CategoryId,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock,
+                StockMin = product.StockMin,
+            };
+        }
+    }
+
+
+    private async Task Save()
+    {
+        try
+        {
+            if (_model == null) return;
+
+            var valid = await _fluentValidationValidator!.ValidateAsync();
+            if (!valid) return;
+
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage, Severity.Success);
+                _navManager.NavigateTo("." + PageRoute.Products, true);
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+       new BreadcrumbItem("Productos", href: ("." + PageRoute.Products), icon: Icons.Material.Filled.Home),
+       new BreadcrumbItem("Editar Producto", href: null, icon:AppMenu.MenuCatalogIcon,disabled:true)
+   };
+
+}

@@ -1,0 +1,50 @@
+﻿@page "/"
+@using BitzArt.Blazor.Auth;
+@using ShopFinance.Infrastructure.Services;
+@using System.Globalization;
+
+<PageTitle>Home</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">  @_layoutCulture["WelcomeMessage"]</MudText>
+<MudText Class="mb-8">Welcome to your new app, powered by MudBlazor and the .NET 9 Template!</MudText>
+
+<MudAlert Severity="Severity.Normal" ContentAlignment="HorizontalAlignment.Start">
+    You can find documentation and examples on our website here:
+    <MudLink Href="https://mudblazor.com" Target="_blank" Typo="Typo.body2" Color="Color.Primary">
+        <b>www.mudblazor.com</b>
+    </MudLink>
+</MudAlert>
+<h5 style="margin-bottom:2rem;">
+    Current renderer: @(RendererInfo.Name)
+</h5>
+<h5 style="margin-bottom:2rem;">
+    AllClain: @(allClain)
+</h5>
+<h5 style="margin-bottom:2rem;">
+    Usuario: @(userName)
+</h5>
+
+@code
+{
+    [Inject] IUserService<SignInPayload> UserService { get; set; } = null!;
+
+    private string allClain;
+    private string userName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var _stateProvider = await UserService.GetAuthenticationStateAsync();
+
+        var user = _stateProvider.User;
+        allClain = user.ToReadableString();
+        userName = user.GetUserName();
+    }
+
+    private void ShowCurrentCulture()
+    {
+        var culture = CultureInfo.CurrentCulture;
+        var message = $"Cultura actual:Nombre: {culture.Name} Nombre nativo: {culture.NativeName} Fecha: {DateTime.Now.ToString("D")}Número: {12345.67.ToString("C")}";
+
+
+    }
+}

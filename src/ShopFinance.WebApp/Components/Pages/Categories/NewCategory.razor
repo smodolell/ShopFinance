@@ -1,0 +1,78 @@
+﻿@attribute [Route(PageRoute.NewCategory)]
+@attribute [AccessPoint(AppMenu.MenuProject, "Nueva Categoria", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Categories.Commands
+
+
+<PageHeader Title="Nueva Categoria" Icon="@AppMenu.MenuCatalogIcon">
+    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+</PageHeader>
+<EditForm Model="_model" OnValidSubmit="Create">
+    <FluentValidationValidator @ref="_fluentValidationValidator" />
+    <MudGrid>
+        <MudItem xs="12" sm="12" md="12">
+            <MudTextField @bind-Value="_model.Code"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Label="Code"
+                          For="@(() => _model.Code)">
+            </MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="12" md="12">
+            <MudTextField @bind-Value="_model.Name"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Label="Name"
+                          For="@(() => _model.Name)">
+            </MudTextField>
+        </MudItem>
+
+        <MudItem xs="12" sm="12" md="12">
+            <MudStack Justify="Justify.FlexEnd">
+                <MudButton Variant="Variant.Filled"
+                           ButtonType="ButtonType.Submit"
+                           Color="Color.Primary"
+                           Class="ml-auto">
+                    Crear Categoria
+                </MudButton>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+@code {
+
+
+    private CreateCategoryCommand _model = new CreateCategoryCommand();
+    private FluentValidationValidator? _fluentValidationValidator;
+
+    private async Task Create()
+    {
+        if (_model == null) return;
+
+        var valid = await _fluentValidationValidator!.ValidateAsync();
+        if (!valid) return;
+
+        var result = await _commandMediator.SendAsync(_model);
+
+        if (result.IsSuccess)
+        {
+            _snackbarService.Add(result.SuccessMessage, Severity.Success);
+            _navManager.NavigateTo("." + PageRoute.Categories);
+        }
+        else
+        {
+            _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error", Severity.Error);
+        }
+
+    }
+
+
+
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Categories", href: ("." + PageRoute.Categories), icon: Icons.Material.Filled.Home),
+        new BreadcrumbItem("Nueva Categoria", href: null, icon:AppMenu.MenuOperacionIcon,disabled:true)
+    };
+
+}

@@ -1,0 +1,74 @@
+﻿@using BitzArt.Blazor.Auth;
+@using ShopFinance.Infrastructure.Services;
+@using ShopFinance.WebApp.Components.Layout.UserAvatar.Dialogs;
+@rendermode InteractiveServer
+
+<MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Dense="true"
+         AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+    <ActivatorContent>
+        @if (string.IsNullOrEmpty(_avatar))
+        {
+            <MudAvatar Size="Size.Small" Color=" Color.Primary">
+                @_fullName
+            </MudAvatar>
+        }
+        else
+        {
+            <MudAvatar Size="Size.Small">
+                <MudImage Src="@("Avatars/" + _avatar)"></MudImage>
+            </MudAvatar>
+        }
+    </ActivatorContent>
+    <ChildContent>
+        <MudContainer Class="d-flex flex-column pa-1" Style="width:180px;">
+            <MudContainer Class="d-flex flex-column align-center justify-center my-3">
+                <MudText Typo="Typo.subtitle1" Style="max-width:160px;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">
+                    @_fullName
+                </MudText>
+            </MudContainer>
+            <MudDivider Class="mb-2" />
+            <MudMenuItem Icon="@Icons.Material.Filled.Settings" OnClick="ShowUserSettings">
+                @_layoutCulture["Layout_Setting"]
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="LogoutClick">
+                @_layoutCulture["Layout_Logout"]
+            </MudMenuItem>
+        </MudContainer>
+    </ChildContent>
+</MudMenu>
+@code {
+    [Inject] IUserService<SignInPayload> UserService { get; set; } = null!;
+    string _userName = string.Empty;
+    string _fullName = string.Empty;
+    string? _avatar = string.Empty;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await UserService.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _userName = user.GetUserName();
+        _fullName = user.GetFullName();
+    }
+
+    private async Task ShowUserSettings()
+    {
+        var parameters = new DialogParameters { };
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraLarge, NoHeader = true };
+        var dialog = await _dialogService.ShowAsync<ProfileSetting>(string.Empty, parameters, options);
+        var result = await dialog.Result;
+
+        //using var context = await _dbFactory.CreateDbContextAsync();
+        //var userId = await _stateProvider.GetUserIdAsync();
+        //var userInfo = context.Users.Find(userId);
+        //_userName = userInfo.RealName;
+        //_avatar = userInfo.Avatar;
+        StateHasChanged();
+    }
+
+    private async Task LogoutClick()
+    {
+        await UserService.SignOutAsync();
+        _navManager.NavigateTo("/login", true);
+    }
+}

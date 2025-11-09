@@ -1,0 +1,121 @@
+﻿@using ShopFinance.Application.Features.Categories.Commands
+@using ShopFinance.Application.Features.Categories.Queries
+<MudDialog>
+    <DialogContent>
+        @if (_model != null)
+        {
+            <EditForm Model="_model" OnValidSubmit="SaveSubmit" id="MyID">
+                <FluentValidationValidator @ref="_fluentValidationValidator" />
+                <MudGrid>
+                    <MudItem xs="12" sm="12" md="12">
+                        <MudTextField @bind-Value="_model.Code"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Label="Codigo"
+                                      For="@(() => _model.Code)">
+                        </MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" sm="12" md="12">
+                        <MudTextField @bind-Value="_model.Name"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Label="Nombre"
+                                      For="@(() => _model.Name)">
+                        </MudTextField>
+                    </MudItem>
+                </MudGrid>
+            </EditForm>
+
+
+        }
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" FullWidth="false"
+                   Color="Color.Primary"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   form="MyID">
+            Guardar
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   FullWidth="false"
+                   Color="Color.Default"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   OnClick="@(() => Close())"
+                   StartIcon="@Icons.Material.Filled.Close">
+            Cerrar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public int CategoryId { get; set; }
+
+
+    [CascadingParameter] IMudDialogInstance? MudDialog { get; set; }
+
+    private UpdateCategoryCommand? _model;
+
+    private FluentValidationValidator? _fluentValidationValidator;
+    protected override async Task OnInitializedAsync()
+    {
+        if (_model == null)
+        {
+            await InitialData();
+        }
+    }
+
+    private async Task InitialData()
+    {
+        var result = await _queryMediator.QueryAsync(new GetCategoryByIdQuery
+        {
+            CategoryId = CategoryId
+        });
+
+        if (result.IsSuccess)
+        {
+            var dto = result.Value;
+            _model = new UpdateCategoryCommand
+            {
+                CategoryId = dto.Id,
+                Code = dto.Code,
+                Name = dto.Name
+            };
+        }
+    }
+
+
+    private async Task SaveSubmit()
+    {
+
+        try
+        {
+            if (_model == null) return;
+
+            var valid = await _fluentValidationValidator!.ValidateAsync();
+            if (!valid) return;
+
+            var result = await _commandMediator.SendAsync(_model);
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage, Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error", Severity.Error);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void Close() => MudDialog?.Close(DialogResult.Ok(false));
+}

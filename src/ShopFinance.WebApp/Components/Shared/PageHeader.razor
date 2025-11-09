@@ -1,0 +1,35 @@
+﻿@namespace ShopFinance.WebApp.Components.Shared
+
+<div class="d-flex align-center mb-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <MudIcon Icon="@Icon" Title="Favorite" Size="Size.Large" />
+        }
+        <MudStack Justify="Justify.Center" Spacing="0">
+            <MudText Typo="Typo.h5">
+                @Title
+            </MudText>
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <MudText Typo="Typo.subtitle1">
+                    @Description
+                </MudText>
+            }
+
+        </MudStack>
+    </MudStack>
+
+
+    <MudSpacer />
+    @ChildContent
+</div>
+
+@code {
+
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? Icon { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

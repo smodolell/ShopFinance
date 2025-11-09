@@ -1,0 +1,138 @@
+﻿@using Blazored.FluentValidation
+@using Microsoft.AspNetCore.Components.Authorization
+@using ShopFinance.Infrastructure.Services
+@using BitzArt.Blazor.Auth
+@inject HttpClient Http
+@rendermode RenderMode.InteractiveServer
+@attribute [Route(PageRoute.Login)]
+@attribute [AllowAnonymous]
+
+<div class="full-screen d-flex justify-center align-center">
+    @if (ShowContent)
+    {
+        <MudPaper Class="pa-8 d-flex justify-center align-center flex-column py-8">
+            <MudText Typo="Typo.h4" Class="py-4">
+                <div class="d-flex align-center">
+                    <MudImage Src="images/header-logo.png" Width="310" Height="104" />
+                </div>
+            </MudText>
+
+            <div style="width:300px;">
+                <EditForm Model="_model" OnValidSubmit="LoginSubmit" style="width:100%;">
+
+                    <FluentValidationValidator />
+                    <MudTextField Class="mt-4"
+                                  @bind-Value="_model.Email"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="Ingrese el nombre de usuario"
+                                  For="@(() => _model.Email)"
+                                  UserAttributes="InputAttributes"
+                                  AdornmentIcon="@Icons.Material.Filled.AccountCircle"
+                                  Adornment="Adornment.Start">
+                    </MudTextField>
+                    <MudTextField Class="mt-4" @bind-Value="_model.Password"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Placeholder="Ingrese contraseña"
+                                  For="@(() => _model.Password)"
+                                  InputType="@PasswordInput"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@PasswordInputIcon"
+                                  OnAdornmentClick="ShowPassword"
+                                  Clearable="true"
+                                  UserAttributes="InputAttributes">
+
+                    </MudTextField>
+                    <div class="mt-4">
+                        <MudButton Variant="Variant.Filled"
+                                   FullWidth="true"
+                                   Color="Color.Primary"
+                                   ButtonType="ButtonType.Submit"
+                                   Disabled="IsLoading">
+                            @if (IsLoading)
+                            {
+                                <MudProgressCircular Color="Color.Default" Indeterminate="true" Size="Size.Small" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Login"></MudIcon>
+                            }
+                            <MudText Class="ml-2">Acceso</MudText>
+                        </MudButton>
+                    </div>
+                </EditForm>
+            </div>
+        </MudPaper>
+    }
+    else
+    {
+        <svg class="pl" width="240" height="240" viewBox="0 0 240 240">
+            <circle class="pl__ring pl__ring--a" cx="120" cy="120" r="105" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 660" stroke-dashoffset="-330" stroke-linecap="round"></circle>
+            <circle class="pl__ring pl__ring--b" cx="120" cy="120" r="35" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 220" stroke-dashoffset="-110" stroke-linecap="round"></circle>
+            <circle class="pl__ring pl__ring--c" cx="85" cy="120" r="70" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 440" stroke-linecap="round"></circle>
+            <circle class="pl__ring pl__ring--d" cx="155" cy="120" r="70" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 440" stroke-linecap="round"></circle>
+        </svg>
+    }
+</div>
+@code{
+    private bool ShowContent;
+    private bool IsLoading = false;
+    private bool isShow = false;
+    private InputType PasswordInput = InputType.Password;
+    private string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+    private Dictionary<string, object> InputAttributes { get; set; } = new Dictionary<string, object>() { { "autocomplete", "new-password2" } };
+    [Inject] IUserService<SignInPayload> UserService { get; set; } = null!;
+
+    private SignInPayload _model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await _stateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
+        {
+            _navManager.NavigateTo("./");
+        }
+        else
+        {
+            ShowContent = true;
+        }
+    }
+
+
+    private async Task LoginSubmit()
+    {
+
+        IsLoading = true;
+
+        var authenticationResult = await UserService.SignInAsync(_model);
+
+
+        if (authenticationResult.IsSuccess)
+        {
+            _navManager.NavigateTo("/", true);
+
+        }
+        else
+        {
+            _snackbarService.Add(authenticationResult.ErrorMessage ?? "", Severity.Error);
+        }
+
+        IsLoading = false;
+    }
+
+    void ShowPassword()
+    {
+        if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+}

@@ -1,0 +1,76 @@
+﻿@attribute [Route(PageRoute.DetailRole + "/{RoleId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuProject, "Editar Projecto", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Roles.Queries
+@using ShopFinance.Application.Features.Roles.Commands
+@using ShopFinance.Application.Features.Roles.DTOs
+<PageHeader Title="Editar Rol" Icon="@AppMenu.MenuProjectIcon">
+    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+</PageHeader>
+
+@if (_model != null)
+{
+    <FormSection Title="Detalle de Projecto">
+        <ToolBarContent>
+            <MudButton StartIcon="@Icons.Material.Outlined.Edit"
+                       OnClick="EditClick">
+                @AppStrings.Edit
+            </MudButton>
+        </ToolBarContent>
+        <ChildContent>
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.Name" Label="Titulo"></ReadOnlyField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="9">
+                 
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.Description" Label="Status"></ReadOnlyField>
+                </MudItem>
+            
+            </MudGrid>
+        </ChildContent>
+    </FormSection>
+
+
+}
+@code {
+    [Parameter]
+    public Guid RoleId { get; set; }
+
+    private RoleDto? _model;
+
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+{
+       new BreadcrumbItem("Proyectos", href: ("." + PageRoute.Categories), icon: Icons.Material.Filled.Home),
+       new BreadcrumbItem("Detalle Proyecto", href: null, icon:AppMenu.MenuOperacionIcon,disabled:true)
+    };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_model == null)
+        {
+            await InitialData();
+        }
+    }
+    private async Task InitialData()
+    {
+        var result = await _queryMediator.QueryAsync(new GetRoleByIdQuery
+        {
+            RoleId = RoleId
+        });
+        if (result.IsSuccess)
+        {
+            _model = result.Value;
+        }
+    }
+
+    private void EditClick()
+    {
+        _navManager.NavigateTo("." + PageRoute.EditCategory+ $"/{RoleId}", true);
+    }
+
+
+}

@@ -1,0 +1,77 @@
+﻿@using ShopFinance.Application.Common.Models.Configurations
+@using ShopFinance.Application.Common.Interfaces
+@using System.Security.Cryptography;
+@inject IConfigurationService _configurationService
+@if (_model != null)
+{
+    <EditForm Model="_model" OnValidSubmit="JwtConfigSubmit" style="width:100%;">
+
+        <DataAnnotationsValidator />
+        <MudTextField Class="mt-4"
+                      @bind-Value="_model.Issuer"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Placeholder="Issuer"
+                      For="@(() => _model.Issuer)"
+                      Label="Issuer">
+        </MudTextField>
+        <MudTextField Class="mt-4" @bind-Value="_model.Audience" Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Placeholder="Audience" For="@(() => _model.Audience)" Label="Audience"></MudTextField>
+        <MudTextField Class="mt-4" @bind-Value="_model.PublicKey" Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Placeholder="RsaPublicKey" For="@(() => _model.PublicKey)" Label="RsaPublicKey" Lines="5" ReadOnly="true"></MudTextField>
+        <MudNumericField Class="mt-4" @bind-Value="_model.ExpireMinutes" Label="Tiempo de vencimiento (minutos)" Variant="Variant.Outlined" />
+        <div class="d-flex mt-4">
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mr-2"
+                       ButtonType="ButtonType.Button" OnClick="GenerateNewRsa" StartIcon="@Icons.Material.Filled.Password">
+                Generar nueva clave
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       ButtonType="ButtonType.Submit"
+                       StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+        </div>
+    </EditForm>
+}
+
+
+@code {
+    private JwtConfig? _model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetSettingsAsync();
+    }
+
+    private async Task GetSettingsAsync()
+    {
+        if (_model == null)
+        {
+            _model = await _configurationService.GetJwtConfigAsync();
+        }
+    }
+
+    private async Task GenerateNewRsa()
+    {
+        if (_model == null) return;
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraLarge, NoHeader = true };
+        var dialog = await _dialogService.ShowAsync<ConfirmUpdateRsa>(string.Empty, new DialogParameters(), options);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            var rsa = RSA.Create();
+            _model.PrivateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
+            _model.PublicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
+        }
+    }
+
+    private async Task JwtConfigSubmit()
+    {
+        if (_model == null) return;
+        var result = await _configurationService.SaveJwtConfigAsync(_model);
+        _snackbarService.Add("¡Guardado exitosamente!", Severity.Success);
+    }
+
+
+}

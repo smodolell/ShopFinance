@@ -1,0 +1,15 @@
+﻿@attribute [Route(PageRoute.Users)]
+@attribute [AccessPoint(AppMenu.MenuSecurity, "Usuarios")]
+@*<PageHeader Title="Usuarios" Icon="@AppMenu.MenuSecurityIcon">
+    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+</PageHeader>*@
+<Breadcrumbs BreadcrumbItems="_items"></Breadcrumbs>
+@code {
+
+
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Usuarios", href: null, icon: Icons.Material.Filled.Home,disabled: true),
+    };
+}

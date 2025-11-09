@@ -1,0 +1,21 @@
+﻿@page "/public"
+@attribute [AllowAnonymous]
+
+<MudContainer>
+    <MudText Typo="Typo.h3" GutterBottom="true">Página Pública</MudText>
+    <MudText>Esta página no requiere autenticación.</MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               OnClick="GoToLogin">
+        Ir al Login
+    </MudButton>
+</MudContainer>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+}

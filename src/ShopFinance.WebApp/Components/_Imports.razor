@@ -1,0 +1,45 @@
+﻿@using System.Net.Http
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Authorization
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using MudBlazor.Services
+@using ShopFinance.WebApp
+@using ShopFinance.WebApp.Attributes
+@using ShopFinance.WebApp.Components
+@using ShopFinance.WebApp.Constants
+@using ShopFinance.WebApp.Components.Layout.States
+@using ShopFinance.WebApp.Components.Shared
+@using ShopFinance.WebApp.Components.Shared.Breadcrumbs
+@using ShopFinance.WebApp.Components.Shared.Dialogs
+@using ShopFinance.WebApp.Components.Shared.Forms
+@using ShopFinance.WebApp.Resources
+
+@using ShopFinance.Application.Common.Constants
+@using ShopFinance.Application.Common.Interfaces
+@using ShopFinance.Application.Common.Models
+
+@using Blazored.FluentValidation
+@using LiteBus.Commands.Abstractions
+@using LiteBus.Queries.Abstractions
+
+@inject AuthenticationStateProvider _stateProvider;
+@inject LayoutState _layoutState;
+@inject ThemeState _themeState;
+@inject IJSRuntime _jsRuntime;
+@inject NavigationManager _navManager;
+@inject IDialogService _dialogService;
+@inject ISnackbar _snackbarService;
+@inject ICommandMediator _commandMediator;
+@inject IQueryMediator _queryMediator;
+@inject IStringLocalizer<LayoutCulture> _layoutCulture;
+
+
+@attribute [Authorize]

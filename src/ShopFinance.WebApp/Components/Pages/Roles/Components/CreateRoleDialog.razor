@@ -1,0 +1,89 @@
+﻿@using ShopFinance.Application.Features.Roles.Commands
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="Create" id="MyID">
+            <FluentValidationValidator @ref="_fluentValidationValidator" />
+            <MudGrid>
+                <MudItem xs="12" sm="9" md="9">
+                    <MudTextField @bind-Value="_model.Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Nombre"
+                                  For="@(() => _model.Name)">
+                    </MudTextField>
+                </MudItem>        
+                <MudItem xs="12" sm="12" md="12">
+                    <MudTextField @bind-Value="_model.Description"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Descripcion"
+                                  Lines="10"
+                                  For="@(() => _model.Description)">
+                    </MudTextField>
+                </MudItem>
+
+            </MudGrid>
+
+        </EditForm>
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" FullWidth="false"
+                   Color="Color.Primary"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   form="MyID">
+            Crear Tarea
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   FullWidth="false"
+                   Color="Color.Default"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   OnClick="@(() => Close())"
+                   StartIcon="@Icons.Material.Filled.Close">
+            Cerrar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private CreateRoleCommand _model = new CreateRoleCommand();
+    private FluentValidationValidator? _fluentValidationValidator;
+    [CascadingParameter] IMudDialogInstance? MudDialog { get; set; }
+
+
+    private async Task Create()
+    {
+
+        try
+        {
+            if (_model == null) return;
+
+            var valid = await _fluentValidationValidator!.ValidateAsync();
+            if (!valid) return;
+
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage, Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error", Severity.Error);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add(ex.Message, Severity.Error);
+        }
+
+    }
+
+    private void Close() => MudDialog?.Close(DialogResult.Ok(false));
+}
