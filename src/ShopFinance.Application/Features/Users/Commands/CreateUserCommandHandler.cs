@@ -22,8 +22,6 @@ internal class CreateUserCommandHandler : ICommandHandler<CreateUserCommand, Res
     }
     public async Task<Result<Guid>> HandleAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
     {
-        await _unitOfWork.BeginTransactionAsync();
-
         try
         {
 
@@ -44,14 +42,17 @@ internal class CreateUserCommandHandler : ICommandHandler<CreateUserCommand, Res
                 Guid.NewGuid(),
                 command.UserName,
                 command.Email,
-                command.FirstName,
-                command.LastName
+                command.FullName,
+                command.AvatarUrl
             );
+            
+            
+            var createResult = await _unitOfWork.Users.CreateAsync(user, command.Password);
+            if (!createResult.IsSuccess)
+            {
+                return createResult;
+            }
 
-            await _unitOfWork.Users.AddAsync(user);
-
-
-            await _unitOfWork.CommitAsync();
 
             _logger.LogInformation("Usuario creadi exitosamente con ID: {UserId}", user.Id);
 
@@ -59,7 +60,6 @@ internal class CreateUserCommandHandler : ICommandHandler<CreateUserCommand, Res
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackAsync();
             _logger.LogError(ex, "Error al crear usuario con nombre de usuuario: {UserName}", command.UserName);
             return Result.Error($"Error arear usuario: {ex.Message}");
 

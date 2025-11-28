@@ -12,7 +12,10 @@ public class LayoutService : ILayoutService
     {
         var menus = new List<AccessPointDto>();
         var pages = GetPages(typeof(LayoutService).Assembly);
-        foreach (var page in pages.Where(r => r.AccessPointType == AccessPointType.LeftMenu))
+        foreach (var page in pages.
+            Where(r => r.AccessPointType == AccessPointType.LeftMenu)
+            .OrderBy(o => o.Menu)
+            .ThenBy(t => t.MenuItem))
         {
             var menu = menus.FirstOrDefault(r => r.MenuName != null && r.MenuName.Equals(page.Menu));
             if (menu == null)
@@ -102,3 +105,4 @@ public class LayoutService : ILayoutService
         return resultPage;
     }
 }
+

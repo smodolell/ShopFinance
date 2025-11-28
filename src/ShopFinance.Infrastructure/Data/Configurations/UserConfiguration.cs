@@ -11,13 +11,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("Users");
 
         // Configuraciones adicionales para ApplicationUser
-        builder.Property(u => u.FirstName)
+        builder.Property(u => u.FullName)
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(u => u.LastName)
-            .HasMaxLength(100)
-            .IsRequired();
+        
 
         builder.Property(u => u.IsActive)
             .HasDefaultValue(true);

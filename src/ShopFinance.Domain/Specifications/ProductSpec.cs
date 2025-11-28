@@ -1,17 +1,30 @@
 ﻿using ShopFinance.Domain.Entities;
+using ShopFinance.Domain.Enums;
 
 namespace ShopFinance.Domain.Specifications;
 
 public class ProductSpec : Specification<Product>
 {
-    public string? SearchText { get; set; }
 
-    public ProductSpec()
+    public ProductSpec(string? searchText, ProductState? state,int? categoryId)
     {
-        if (!string.IsNullOrWhiteSpace(SearchText))
+        if (!string.IsNullOrWhiteSpace(searchText))
         {
-            Query.Where(u => u.Name.Contains(SearchText) || u.Description.Contains(SearchText));
+            searchText = searchText.ToLower();
+            Query.Where(u => u.Code.ToLower().Contains(searchText) 
+            || u.CodeSku.ToLower().Contains(searchText) 
+            || u.Name.ToLower().Contains(searchText) 
+            || u.Description.ToLower().Contains(searchText));
         }
 
+        if (state != null)
+        {
+            Query.Where(u => u.State == state);
+        }
+
+        if(categoryId.HasValue)
+        {
+            Query.Where(u => u.CategoryId == categoryId.Value);
+        }
     }
 }

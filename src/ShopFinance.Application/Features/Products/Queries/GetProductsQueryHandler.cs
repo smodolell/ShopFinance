@@ -18,7 +18,7 @@ internal class GetProductsQueryHandler : IQueryHandler<GetProductsQuery, PagedRe
     }
     public async Task<PagedResult<List<ProductListItemDto>>> HandleAsync(GetProductsQuery message, CancellationToken cancellationToken = default)
     {
-        var spec = new ProductSpec { SearchText = message.SearchText };
+        var spec = new ProductSpec(message.SearchText,message.State,message.CategoryId);
 
         var query = _unitOfWork.Products.ApplySpecification(spec);
 

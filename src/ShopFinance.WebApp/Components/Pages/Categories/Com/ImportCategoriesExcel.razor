@@ -1,0 +1,321 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using ShopFinance.Application.Features.Categories.Commands
+@using ShopFinance.WebApp.Extensions;
+@using BlazorDownloadFile
+@inject IBlazorDownloadFileService _downloadFileService;
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-4">Importar Categorías desde Excel</MudText>
+
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            <MudText Typo="Typo.body2">
+                <strong>Formato requerido:</strong><br />
+                • Primera columna: <strong>Código</strong> (obligatorio, máximo 50 caracteres)<br />
+                • Segunda columna: <strong>Nombre</strong> (obligatorio, máximo 200 caracteres)<br />
+                • Tercera columna: <strong>Descripción</strong> (opcional)<br />
+                <br />
+                <strong>Nota:</strong> La primera fila debe contener los encabezados.
+            </MudText>
+        </MudAlert>
+
+        <MudGrid Spacing="2">
+            <!-- Botón para descargar plantilla -->
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.Download"
+                           OnClick="DownloadTemplate"
+                           Disabled="_isLoading"
+                           Size="Size.Small">
+                    Descargar Plantilla
+                </MudButton>
+            </MudItem>
+
+            <!-- MudFileUpload para subir archivo -->
+            <MudItem xs="12">
+                <MudFileUpload T="IBrowserFile"
+                               FilesChanged="UploadFiles"
+                               Accept=".xlsx,.xls"
+                               MaxFileSize="5242880"
+                               Disabled="_isLoading">
+                    <ActivatorContent>
+                        <MudPaper Class="pa-6 text-center"
+                                  Style="border: 2px dashed #ccc; cursor: pointer;"
+                                  Elevation="1">
+                            <MudIcon Icon="@Icons.Material.Filled.CloudUpload"
+                                     Size="Size.Large"
+                                     Color="Color.Primary"
+                                     Class="mb-2" />
+                            <MudText Typo="Typo.body1" Class="mb-2">
+                                Haz clic para seleccionar archivo Excel
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Default">
+                                Formatos permitidos: .xlsx, .xls (Máx. 5MB)
+                            </MudText>
+                        </MudPaper>
+                    </ActivatorContent>
+                    <SelectedTemplate Context="file">
+                        @if (file != null)
+                        {
+                            <MudPaper Class="pa-3 mt-2" Elevation="1" Style="background-color: var(--mud-palette-success-light);">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Attachment" Color="Color.Success" />
+                                    <MudText Typo="Typo.body1">@file.Name</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Default">
+                                        (@((file.Size / 1024).ToString("N0")) KB)
+                                    </MudText>
+                                    <MudSpacer />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                   Size="Size.Small"
+                                                   OnClick="ClearFile"
+                                                   Color="Color.Default" />
+                                </MudStack>
+                            </MudPaper>
+                        }
+                    </SelectedTemplate>
+
+                </MudFileUpload>
+            </MudItem>
+
+            <!-- Resultados de importación -->
+            @if (_importResult != null)
+            {
+                <MudItem xs="12">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Class="mb-3">Resultado de la Importación</MudText>
+
+                            <MudGrid Spacing="2">
+                                <MudItem xs="12" sm="4">
+                                    <MudPaper Class="pa-3 text-center" Elevation="1">
+                                        <MudText Typo="Typo.h4" Color="Color.Default">@_importResult.TotalRecords</MudText>
+                                        <MudText Typo="Typo.body2">Total Registros</MudText>
+                                    </MudPaper>
+                                </MudItem>
+                                <MudItem xs="12" sm="4">
+                                    <MudPaper Class="pa-3 text-center" Elevation="1" Style="background-color: var(--mud-palette-success-light);">
+                                        <MudText Typo="Typo.h4" Color="Color.Success">@_importResult.SuccessCount</MudText>
+                                        <MudText Typo="Typo.body2">Éxitos</MudText>
+                                    </MudPaper>
+                                </MudItem>
+                                <MudItem xs="12" sm="4">
+                                    <MudPaper Class="pa-3 text-center" Elevation="1" Style="background-color: var(--mud-palette-warning-light);">
+                                        <MudText Typo="Typo.h4" Color="Color.Warning">@_importResult.ErrorCount</MudText>
+                                        <MudText Typo="Typo.body2">Errores</MudText>
+                                    </MudPaper>
+                                </MudItem>
+                            </MudGrid>
+
+                            @if (_importResult.HasErrors)
+                            {
+                                <MudExpansionPanel Class="mt-3">
+                                    <TitleContent>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" />
+                                            <MudText Typo="Typo.subtitle1">Detalles de Errores (@_importResult.Errors.Count)</MudText>
+                                        </MudStack>
+                                    </TitleContent>
+                                    <ChildContent>
+                                        <MudList T="string" Dense="true" Style="overflow-y: auto; height: 250px">
+                                            @foreach (var error in _importResult.Errors.Take(50))
+                                            {
+                                                <MudListItem Text="@error" />
+                                            }
+                                            @if (_importResult.Errors.Count > 50)
+                                            {
+                                                <MudListItem>
+                                                    <MudText Typo="Typo.caption" Color="Color.Default">
+                                                        ... y @(_importResult.Errors.Count - 50) errores más
+                                                    </MudText>
+                                                </MudListItem>
+                                            }
+                                        </MudList>
+                                    </ChildContent>
+                                </MudExpansionPanel>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudSpacer />
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="Cancel"
+                   Disabled="_isLoading">
+            Cancelar
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="ImportExcel"
+                   Disabled="_isLoading || !_selectedFiles.Any()"
+                   StartIcon="@Icons.Material.Filled.Upload">
+            @(_isLoading ? "Importando..." : "Importar Categorías")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+    private FileModel model = new();
+    private IList<IBrowserFile> _selectedFiles = new List<IBrowserFile>();
+    private CreateCategoryFromExcelCommandResult? _importResult;
+    private bool _isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MudDialog != null)
+        {
+            await MudDialog.SetOptionsAsync(new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            });
+        }
+    }
+    private void UploadFiles(IBrowserFile file)
+    {
+
+        _selectedFiles.Add(file);
+
+    }
+    private async Task ImportExcel()
+    {
+        if (!_selectedFiles.Any())
+        {
+            _snackbarService.Add("Por favor, seleccione un archivo Excel válido", Severity.Warning);
+            return;
+        }
+
+        var file = _selectedFiles.First();
+        _isLoading = true;
+        _importResult = null;
+
+        try
+        {
+            var command = new CreateCategoryFromExcelCommand
+            {
+                File = await file.ToFormFileAsync()
+            };
+
+            var result = await _commandMediator.SendAsync(command);
+
+            if (result.IsSuccess)
+            {
+                _importResult = result.Value;
+
+                if (_importResult.SuccessCount > 0)
+                {
+                    _snackbarService.Add(
+                        $"¡Éxito! {_importResult.SuccessCount} categorías importadas correctamente",
+                        Severity.Success);
+                }
+
+                if (_importResult.HasErrors)
+                {
+                    _snackbarService.Add(
+                        $"{_importResult.ErrorCount} errores encontrados durante la importación",
+                        Severity.Warning);
+                }
+
+                // Limpiar archivo seleccionado después de importar exitosamente
+                if (!_importResult.HasErrors)
+                {
+                    _selectedFiles = new List<IBrowserFile>();
+                    await Task.Delay(1500);
+                    MudDialog?.Close(DialogResult.Ok(true));
+                }
+            }
+            else
+            {
+                _snackbarService.Add($"Error en importación: {result.Errors.FirstOrDefault()}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error durante la importación: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadTemplate()
+    {
+        try
+        {
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Categorias");
+
+            // Estilo para encabezados
+            var headerStyle = worksheet.Range("A1:C1").Style;
+            headerStyle.Font.Bold = true;
+            headerStyle.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGray;
+            headerStyle.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+
+            // Encabezados
+            worksheet.Cell(1, 1).Value = "Código*";
+            worksheet.Cell(1, 2).Value = "Nombre*";
+            worksheet.Cell(1, 3).Value = "Descripción";
+
+            // Ejemplos de datos válidos
+            worksheet.Cell(2, 1).Value = "ELEC";
+            worksheet.Cell(2, 2).Value = "Electrónicos";
+            worksheet.Cell(2, 3).Value = "Productos electrónicos y dispositivos";
+
+            worksheet.Cell(3, 1).Value = "ROPA";
+            worksheet.Cell(3, 2).Value = "Ropa";
+            worksheet.Cell(3, 3).Value = "Prendas de vestir para todas las edades";
+
+            worksheet.Cell(4, 1).Value = "ALIM";
+            worksheet.Cell(4, 2).Value = "Alimentos";
+            worksheet.Cell(4, 3).Value = "Productos alimenticios y bebidas";
+
+            // Nota informativa
+            worksheet.Cell(6, 1).Value = "Nota: Los campos marcados con * son obligatorios";
+            worksheet.Range("A6:C6").Style.Font.Italic = true;
+            worksheet.Range("A6:C6").Style.Font.FontColor = ClosedXML.Excel.XLColor.Gray;
+
+            // Ajustar columnas al contenido
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            var content = stream.ToArray();
+            await _downloadFileService.DownloadFile("Plantilla_Importar_Categorias.xlsx", content, GlobalVariables.ContentTypeExcel);
+
+
+            _snackbarService.Add("Plantilla descargada correctamente", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al descargar plantilla: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ClearFile()
+    {
+        _selectedFiles = new List<IBrowserFile>();
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        if (!_isLoading)
+        {
+            MudDialog?.Cancel();
+        }
+    }
+    public class FileModel
+    {
+        public string Name { get; set; }
+        public IBrowserFile File { get; set; }
+    }
+}

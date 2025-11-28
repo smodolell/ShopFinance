@@ -54,8 +54,8 @@ public class AccessPointAttribute : Attribute
                 return AppMenu.MenuOperacionIcon;
             case AppMenu.MenuProceso:
                 return AppMenu.MenuProcesoIcon;
-            case AppMenu.MenuCliente:
-                return Icons.Material.Filled.Person;
+            case AppMenu.MenuCustomers:
+                return AppMenu.MenuCustomersIcon;
             case AppMenu.MenuAlerta:
                 return Icons.Material.Filled.Warning;
             case AppMenu.MenuReporte:
@@ -80,10 +80,6 @@ public class AccessPointAttribute : Attribute
                 return AppMenu.MenuProjectIcon;
             case AppMenu.MenuApoyo:
                 return AppMenu.MenuApoyoIcon;
-            // case AppMenu.MenuDashboad:
-            //    return AppMenu.MenuDashboadIcon;
-            //case AppMenu.MenuGestion:
-            //    return AppMenu.MenuGestionIcon;
             default: return "";
         }
     }

@@ -1,0 +1,241 @@
+﻿@attribute [Route(PageRoute.EditCustomer + "/{CustomerId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuCustomers, "Editar Cliente", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Customers.Commands
+@using ShopFinance.Application.Features.Customers.DTOs
+@using ShopFinance.Application.Features.Customers.Queries
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Editar Cliente" Icon="@AppMenu.MenuCustomersIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+@if (_model != null)
+{
+    <EditForm Model="_model" OnValidSubmit="HandleValidSubmit">
+        <FluentValidationValidator @ref="_fluentValidationValidator" />
+        <MudGrid Spacing="2">
+            <MudItem xs="12" sm="6" md="4">
+                <MudTextField @bind-Value="_model.Identifier"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="Identificador"
+                              Required="true"
+                              For="@(() => _model.Identifier)"
+                              Disabled="_isSubmitting"
+                              HelperText="Código o documento de identificación">
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudTextField @bind-Value="_model.FirstName"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="Nombres"
+                              Required="true"
+                              For="@(() => _model.FirstName)"
+                              Disabled="_isSubmitting"
+                              HelperText="Nombres del cliente">
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudTextField @bind-Value="_model.LastName"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="Apellidos"
+                              Required="true"
+                              For="@(() => _model.LastName)"
+                              Disabled="_isSubmitting"
+                              HelperText="Apellidos del cliente">
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudDatePicker @bind-Date="_model.Birthdate"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Label="Fecha de Nacimiento"
+                               Required="true"
+                               For="@(() => _model.Birthdate)"
+                               Disabled="_isSubmitting"
+                               DateFormat="dd/MM/yyyy"
+                               HelperText="Fecha de nacimiento del cliente">
+                </MudDatePicker>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText Typo="Typo.caption" Color="Color.Default">
+                    Los campos marcados con * son obligatorios
+                </MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudStack Justify="Justify.FlexEnd" Spacing="2" Row="true">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               OnClick="NavigateToCustomers"
+                               Disabled="_isSubmitting"
+                               StartIcon="@Icons.Material.Filled.ArrowBack">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               ButtonType="ButtonType.Submit"
+                               Disabled="_isSubmitting"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)">
+                        @(_isSubmitting ? "Actualizando..." : "Guardar Cambios")
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+else if (_isLoading)
+{
+    <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Style="height: 300px;">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        <MudText Typo="Typo.body2">Cargando cliente...</MudText>
+    </MudStack>
+}
+else
+{
+    <MudAlert Severity="Severity.Error" Icon="@Icons.Material.Filled.Error">
+        No se pudo cargar el cliente. Verifique que el cliente exista.
+    </MudAlert>
+}
+
+@code {
+    #region Parameters and Fields
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    private UpdateCustomerCommand? _model;
+    private FluentValidationValidator? _fluentValidationValidator;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+    #endregion
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Clientes", href: PageRoute.Customers),
+        new BreadcrumbItem("Editar Cliente", href: null, disabled: true)
+    };
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _isLoading = true;
+            await LoadCustomerData();
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadCustomerData()
+    {
+        var result = await _queryMediator.QueryAsync(new GetCustomerByIdQuery
+        {
+            CustomerId = CustomerId
+        });
+
+        if (result.IsSuccess && result.Value != null)
+        {
+            var customer = result.Value;
+            _model = new UpdateCustomerCommand
+            {
+                Id = customer.CustomerId,
+                Identifier = customer.Identifier,
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                Birthdate = customer.Birthdate,
+            };
+        }
+        else
+        {
+            _snackbarService.Add("No se pudo cargar el cliente", Severity.Error);
+        }
+    }
+    #endregion
+
+    #region Event Handlers
+    private async Task HandleValidSubmit()
+    {
+        if (_isSubmitting || _model == null) return;
+
+        if (!await ValidateFormAsync())
+            return;
+
+        await UpdateCustomerAsync();
+    }
+
+    private async Task<bool> ValidateFormAsync()
+    {
+        if (_fluentValidationValidator != null)
+        {
+            var isValid = await _fluentValidationValidator.ValidateAsync(options =>
+            {
+                options.IncludeAllRuleSets();
+            });
+
+            if (!isValid)
+            {
+                _snackbarService.Add("Por favor, corrige los errores del formulario", Severity.Warning);
+                return false;
+            }
+        }
+        return true;
+    }
+    #endregion
+
+    #region CRUD Operations
+    private async Task UpdateCustomerAsync()
+    {
+        if (_model == null) return;
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage ?? "Cliente actualizado exitosamente", Severity.Success);
+                await Task.Delay(500); // Pequeño delay para mostrar el mensaje
+                NavigateToCustomers();
+            }
+            else
+            {
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "Error al actualizar el cliente";
+                _snackbarService.Add(errorMessage, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void NavigateToCustomers()
+    {
+        _navManager.NavigateTo("." + PageRoute.Customers);
+    }
+    #endregion
+}

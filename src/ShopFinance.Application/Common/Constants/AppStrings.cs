@@ -20,8 +20,10 @@ public static class AppStrings
     public static string Create => Localize("Create");
     public static string Save => Localize("Save");
     public static string Delete => Localize("Delete");
+    public static string Cancel => Localize("Cancel");
     public static string More => Localize("More");
     public static string Print => Localize("Print");
+    public static string UploadSuccess => Localize("UploadSuccess");
 
 
     private static string Localize(string key)

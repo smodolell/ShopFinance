@@ -31,4 +31,3 @@ public class LanguageCode
     public string DisplayName { get; set; } = "es-AR";
     public string Code { get; set; } = "Spanish";
 }
-

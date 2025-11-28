@@ -1,0 +1,19 @@
+﻿@attribute [Route(PageRoute.DetailCustomer + "/{CustomerId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuCustomers, "Detalle del Cliente", AccessPointType.Page)]
+<PageHeader Title="Detalle Cliente" Icon="@AppMenu.MenuCustomersIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+@code {
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Clientes", href: PageRoute.Customers),
+        new BreadcrumbItem("Detalle Cliente", href: null, disabled: true)
+    };
+    #endregion
+
+}

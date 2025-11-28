@@ -83,7 +83,11 @@
     private Dictionary<string, object> InputAttributes { get; set; } = new Dictionary<string, object>() { { "autocomplete", "new-password2" } };
     [Inject] IUserService<SignInPayload> UserService { get; set; } = null!;
 
-    private SignInPayload _model = new();
+    private SignInPayload _model = new SignInPayload
+    {
+        Email = "sergio.modolell@gmail.com",
+        Password = "Sergio123456%"
+    };
 
     protected override async Task OnInitializedAsync()
     {

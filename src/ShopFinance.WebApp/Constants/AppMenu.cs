@@ -33,7 +33,9 @@ public static class AppMenu
 
     public const string MenuProceso = "Procesos";
     public const string MenuProcesoIcon = Icons.Material.Filled.Lan;
-    public const string MenuCliente = "Clientes";
+    public const string MenuCustomers = "Clientes";
+    public const string MenuCustomersIcon = Icons.Material.Filled.PeopleOutline;
+
     public const string MenuAlerta = "Alertas";
     public const string MenuReporte = "Reportes";
     public const string MenuReporteIcon = Icons.Material.Filled.BarChart;

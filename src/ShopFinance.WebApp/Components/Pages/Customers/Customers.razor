@@ -1,0 +1,364 @@
+﻿@attribute [Route(PageRoute.Customers)]
+@attribute [AccessPoint(AppMenu.MenuCustomers, "Clientes")]
+@using ShopFinance.Application.Features.Customers.Commands
+@using ShopFinance.Application.Features.Customers.DTOs
+@using ShopFinance.Application.Features.Customers.Queries
+@using ShopFinance.Domain.Enums
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Clientes" Icon="@AppMenu.MenuCustomersIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+
+<MudDrawer @bind-Open="@_openFilter" Fixed="false" Width="350px" Anchor="Anchor.Right" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Filtros de búsqueda</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing="2" Class="pa-4">
+            <MudItem xs="12">
+                <MudDateRangePicker @bind-DateRange="_dateRange"
+                                    Label="Fecha de creación"
+                                    Margin="Margin.Dense"
+                                    Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButtonGroup Size="Size.Small" Variant="Variant.Filled">
+                    <MudButton Color="Color.Secondary"
+                               OnClick="OnCancelFilter">
+                        Cancelar
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="OnClearFilter"
+                               Disabled="_loading">
+                        Limpiar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="ApplyFilters"
+                               Disabled="_loading">
+                        Filtrar
+                    </MudButton>
+                </MudButtonGroup>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="_dataGridRef"
+             Loading="_loading"
+             T="CustomerListItemDto">
+    <ToolBarContent>
+        <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+            <MudTextField T="string"
+                          ValueChanged="@(s => OnSearch(s))"
+                          Placeholder="Buscar por identificador, nombre o apellido..."
+                          Adornment="Adornment.Start"
+                          Clearable="true"
+                          Class="flex-grow-0"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small">
+            </MudTextField>
+            <MudIconButton Icon="@Icons.Material.Outlined.FilterAlt"
+                           Class="align-self-end pa-1"
+                           Size="Size.Medium"
+                           OnClick="OnFilterClicked" />
+        </MudStack>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+            <MudTooltip Text="Actualizar">
+                <MudIconButton Icon="@Icons.Material.Outlined.Refresh"
+                               Size="Size.Small"
+                               Color="Color.Info"
+                               OnClick="RefreshData"
+                               Disabled="_loading" />
+            </MudTooltip>
+            <MudTooltip Text="Agregar Cliente">
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.PersonAdd"
+                           OnClick="AddClick"
+                           Disabled="_loading">
+                    @AppStrings.New
+                </MudButton>
+            </MudTooltip>
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <HierarchyColumn T="CustomerListItemDto" />
+        <PropertyColumn Title="Identificador" Property="x=>x.Identifier" StickyLeft="true" />
+        <PropertyColumn Title="Nombres" Property="x=>x.FirstName" />
+        <PropertyColumn Title="Apellidos" Property="x=>x.LastName" />
+        <PropertyColumn Title="Fecha Nacimiento" Property="x=>x.Birthdate" Format="dd/MM/yyyy" />
+        <TemplateColumn HeaderStyle="width:140px;min-width:140px;" StickyRight="true" Resizable="false" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                    <MudTooltip Text="Detalles">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Visibility"
+                                       Color="Color.Success"
+                                       OnClick="() => DetailClick(context.Item.Id)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Edit"
+                                       Color="Color.Primary"
+                                       OnClick="() => EditClick(context.Item.Id)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Delete"
+                                       Color="Color.Error"
+                                       OnClick="() => DeleteClick(context.Item)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <ChildRowContent>
+        <MudGrid Spacing="2" Class="py-2">
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.Identifier" Label="Identificador"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@CalculateAge(context.Item.Birthdate)" Label="Edad"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@GetFullName(context.Item)" Label="Nombre Completo"></ReadOnlyField>
+            </MudItem>
+        </MudGrid>
+    </ChildRowContent>
+    <PagerContent>
+        <MudDataGridPager T="CustomerListItemDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="py-4">
+            <MudIcon Icon="@Icons.Material.Outlined.People" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay clientes registrados
+        </MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    </LoadingContent>
+</MudDataGrid>
+
+@code {
+    #region Fields
+    private MudDataGrid<CustomerListItemDto> _dataGridRef = null!;
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Clientes", href: null, disabled: true)
+    };
+
+    private GetCustomersQuery _filter = new();
+    private GetCustomersQuery _origFilter = new();
+    private DateRange _dateRange = new();
+    private bool _loading = false;
+    private bool _openFilter;
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _loading = true;
+            // Aquí puedes cargar datos iniciales específicos de clientes si es necesario
+            await Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<GridData<CustomerListItemDto>> GetTableData(GridState<CustomerListItemDto> gridState)
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            ConfigureFilter(gridState);
+            var paginatedList = await _queryMediator.QueryAsync(_filter);
+
+            return new GridData<CustomerListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar clientes: {ex.Message}", Severity.Error);
+            return new GridData<CustomerListItemDto>() { TotalItems = 0, Items = Enumerable.Empty<CustomerListItemDto>() };
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfigureFilter(GridState<CustomerListItemDto> gridState)
+    {
+        _filter.Page = gridState.Page + 1;
+        _filter.PageSize = gridState.PageSize;
+
+        // Configurar fechas
+        _filter.CreatedFrom = _dateRange.Start?.Date;
+        _filter.CreatedTo = _dateRange.End?.Date.AddDays(1).AddSeconds(-1);
+
+        // Configurar ordenamiento
+        var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
+        {
+            _filter.SortColumn = sortDefinition.SortBy;
+            _filter.SortDescending = sortDefinition.Descending;
+        }
+        else
+        {
+            // Ordenamiento por defecto (usando Birthdate como en tu query)
+            _filter.SortColumn = nameof(CustomerListItemDto.Birthdate);
+            _filter.SortDescending = false;
+        }
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task RefreshData()
+    {
+        if (_dataGridRef != null)
+        {
+            await _dataGridRef.ReloadServerData();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _openFilter = false;
+        await RefreshData();
+    }
+
+    private async Task OnClearFilter()
+    {
+        _filter = new GetCustomersQuery();
+        _dateRange = new DateRange();
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnCancelFilter()
+    {
+        _filter = _origFilter;
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnSearch(string? text)
+    {
+        _filter.SearchText = text;
+        await RefreshData();
+    }
+
+    private void OnFilterClicked()
+    {
+        // backup original filter
+        _origFilter = new GetCustomersQuery
+        {
+            Page = _filter.Page,
+            PageSize = _filter.PageSize,
+            SearchText = _filter.SearchText,
+            SortColumn = _filter.SortColumn,
+            SortDescending = _filter.SortDescending,
+            CreatedFrom = _filter.CreatedFrom,
+            CreatedTo = _filter.CreatedTo
+        };
+
+        _openFilter = true;
+    }
+    #endregion
+
+    #region CRUD Operations
+    private void AddClick()
+    {
+        _navManager.NavigateTo("." + PageRoute.NewCustomer);
+    }
+
+    private void EditClick(Guid id)
+    {
+        _navManager.NavigateTo("." + PageRoute.EditCustomer + $"/{id}", true);
+    }
+
+    private void DetailClick(Guid id)
+    {
+        _navManager.NavigateTo("." + PageRoute.DetailCustomer + $"/{id}", true);
+    }
+
+    private async Task DeleteClick(CustomerListItemDto item)
+    {
+        await _dialogService.ShowConfirmDialog($"¿Desea eliminar al cliente {item.FirstName} {item.LastName}?", "Eliminar Cliente", async (e) =>
+        {
+            try
+            {
+                var result = await _commandMediator.SendAsync(new DeleteCustomerCommand
+                {
+                    CustomerId = item.Id
+                });
+                if (result.IsSuccess)
+                {
+                    await _dataGridRef.ReloadServerData();
+                    _snackbarService.Add(result.SuccessMessage ?? "Cliente eliminado exitosamente", Severity.Success);
+                }
+                else
+                {
+                    _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al eliminar el cliente", MudBlazor.Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        });
+    }
+    #endregion
+
+    #region Helper Methods
+    private string GetFullName(CustomerListItemDto customer)
+    {
+        return $"{customer.FirstName} {customer.LastName}".Trim();
+    }
+
+    private int CalculateAge(DateTime birthdate)
+    {
+        var today = DateTime.Today;
+        var age = today.Year - birthdate.Year;
+        if (birthdate.Date > today.AddYears(-age)) age--;
+        return age;
+    }
+    #endregion
+}

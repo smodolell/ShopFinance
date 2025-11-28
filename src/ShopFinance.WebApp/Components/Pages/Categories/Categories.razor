@@ -1,14 +1,16 @@
 ﻿@attribute [Route(PageRoute.Categories)]
-@attribute [AccessPoint(AppMenu.MenuCatalog, "Categorias")]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Categorías")]
+@using ShopFinance.WebApp.Components.Pages.Categories.Com
 @using ShopFinance.Application.Features.Categories.Commands
 @using ShopFinance.Application.Features.Categories.DTOs
 @using ShopFinance.Application.Features.Categories.Queries
 
 
-<PageHeader Title="Categorias" Icon="@AppMenu.MenuCatalogIcon">
-    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+<PageHeader Title="Categorías" Icon="@AppMenu.MenuCatalogIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
 </PageHeader>
 
+<!-- Filtros de búsqueda -->
 @if (_filtersVisible)
 {
     <MudExpansionPanels Outlined="true" Dense="true" Elevation="0">
@@ -23,32 +25,36 @@
                 <MudGrid Spacing="2">
                     <MudItem xs="12" sm="6" md="4">
                         <MudTextField @bind-Value="_filter.SearchText"
-                                      Label="Buscar proyecto..."
+                                      Label="Buscar categoría..."
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Search" />
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      OnKeyDown="OnSearchKeyDown" />
                     </MudItem>
 
-                    <MudItem xs="12" sm="12" md="4">
+                    <MudItem xs="12" sm="6" md="4">
                         <MudDateRangePicker @bind-DateRange="_dateRange"
                                             Label="Fecha de creación"
                                             Margin="Margin.Dense"
                                             Variant="Variant.Outlined" />
                     </MudItem>
+
                     <MudItem xs="12" sm="12" md="12">
-                        <MudStack Row="true" Justify="Justify.FlexEnd">
-                            <MudButton Variant="Variant.Text"
+                        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                            <MudButton Variant="Variant.Outlined"
                                        Size="Size.Small"
-                                       StartIcon="@Icons.Material.Filled.DeleteOutline"
-                                       OnClick="ClearFilters">
+                                       StartIcon="@Icons.Material.Filled.Clear"
+                                       OnClick="ClearFilters"
+                                       Disabled="_loading">
                                 Limpiar
                             </MudButton>
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Default"
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
                                        Size="Size.Small"
                                        StartIcon="@Icons.Material.Filled.Search"
-                                       OnClick="ApplyFilters">
+                                       OnClick="ApplyFilters"
+                                       Disabled="_loading">
                                 Filtrar
                             </MudButton>
                         </MudStack>
@@ -57,10 +63,9 @@
             </ChildContent>
         </MudExpansionPanel>
     </MudExpansionPanels>
-
-
 }
 
+<!-- DataGrid -->
 <MudDataGrid Outlined="true"
              Dense="true"
              Bordered="true"
@@ -68,125 +73,235 @@
              ServerData="GetTableData"
              FixedHeader="true"
              SortMode="SortMode.Single"
-             @ref="dataGridRef"
+             @ref="_dataGridRef"
              Loading="_loading"
-             T="CategoryDto">
+             T="CategoryListItemDto">
     <ToolBarContent>
         <MudSpacer></MudSpacer>
-        <MudStack Row="true" AlignItems="AlignItems.End">
-            <MudToolBar Dense WrapContent="true" Class="py-1 px-0">
-                <MudButton Disabled="@_loading"
-                           OnClick="@(() => ApplyFilters())"
-                           StartIcon="@Icons.Material.Outlined.Refresh">
-                    @AppStrings.Refresh
-                </MudButton>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudTooltip Text="Alternar filtros">
+                <MudIconButton Icon="@Icons.Material.Outlined.FilterList"
+                               Color="Color.Primary"
+                               OnClick="ToggleFilters"
+                               Disabled="_loading" />
+            </MudTooltip>
 
-                <MudButton StartIcon="@Icons.Material.Outlined.Add"
-                           OnClick="AddClick">
-                    @AppStrings.New
-                </MudButton>
-            </MudToolBar>
+            <MudTooltip Text="Actualizar">
+                <MudIconButton Icon="@Icons.Material.Outlined.Refresh"
+                               Color="Color.Primary"
+                               OnClick="RefreshData"
+                               Disabled="_loading" />
+            </MudTooltip>
 
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Outlined.Add"
+                       OnClick="AddClick"
+                       Disabled="_loading">
+                @AppStrings.New
+            </MudButton>
+            <MudTooltip Text="Importar desde Excel">
+                <MudIconButton Icon="@Icons.Material.Outlined.Upload"
+                               Color="Color.Success"
+                               OnClick="OpenImportDialog"
+                               Disabled="_loading" />
+            </MudTooltip>
         </MudStack>
     </ToolBarContent>
     <Columns>
-        <PropertyColumn Title="Codigo" StickyLeft="true" Resizable="false" HeaderStyle="width:50px;" Property="x=>x.Code" />
+        <PropertyColumn Title="Código" StickyLeft="true" Resizable="false"
+                        HeaderStyle="width:100px;" Property="x=>x.Code" />
         <PropertyColumn Title="Nombre" Property="x=>x.Name" />
-        <TemplateColumn HeaderStyle="white-space:nowrap;width:50px;" StickyRight="true" Resizable="false" Title="Acciones">
+        <PropertyColumn Title="Creado" Property="x=>x.CreatedAt" Format="dd/MM/yyyy" />
+        <PropertyColumn Title="Actualizado" Property="x=>x.UpdatedAt" Format="dd/MM/yyyy" />
+        <TemplateColumn HeaderStyle="width:120px;min-width:120px;"
+                        StickyRight="true" Resizable="false" Title="Acciones">
             <CellTemplate>
-                <MudStack Row="true" Justify="Justify.Center">
-                    <MudIconButton Size="@MudBlazor.Size.Small"
-                                   Icon="@Icons.Material.Outlined.Edit"
-                                   Color="Color.Primary"
-                                   OnClick="()=>EditClick(context.Item.Id)" />
-                    <MudIconButton Size="@MudBlazor.Size.Small"
-                                   Icon="@Icons.Material.Outlined.Delete"
-                                   Color="Color.Error"
-                                   OnClick="()=>DeleteClick(context.Item)" />
+                <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Edit"
+                                       Color="Color.Primary"
+                                       OnClick="() => EditClick(context.Item.Id)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Delete"
+                                       Color="Color.Error"
+                                       OnClick="() => DeleteClick(context.Item)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
                 </MudStack>
             </CellTemplate>
         </TemplateColumn>
     </Columns>
     <PagerContent>
-        <MudDataGridPager T="CategoryDto" />
+        <MudDataGridPager T="CategoryListItemDto" />
     </PagerContent>
     <NoRecordsContent>
-        <MudText>No hay registros de <strong>Categorias</strong></MudText>
+        <MudText Align="Align.Center" Class="py-4">
+            <MudIcon Icon="@Icons.Material.Outlined.Category" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay categorías registradas
+        </MudText>
     </NoRecordsContent>
+    <LoadingContent>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    </LoadingContent>
 </MudDataGrid>
 
 @code {
-
-    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    #region Fields
+    private MudDataGrid<CategoryListItemDto> _dataGridRef = null!;
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
 {
-        new BreadcrumbItem("Categorias", href: null, icon: Icons.Material.Filled.Home,disabled: true),
+        new BreadcrumbItem("Categorías", href: null, disabled: true)
     };
-    private GetCategoriesQuery _filter = new GetCategoriesQuery();
 
-    private DialogOptions _optionsDialogs = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-    private MudDataGrid<CategoryDto> dataGridRef = null!;
-    private MudDateRangePicker? _picker;
-    private DateRange _dateRange = new DateRange();
+    private GetCategoriesQuery _filter = new();
+    private DateRange _dateRange = new();
     private bool _filtersVisible = true;
-    private bool _advancedSearchExpanded;
-    private bool _loading = true;
+    private bool _advancedSearchExpanded = true;
+    private bool _loading = false;
 
-    private async Task<GridData<CategoryDto>> GetTableData(GridState<CategoryDto> gridState)
+    private readonly DialogOptions _dialogOptions = new()
     {
-        _loading = true;
-        _filter.Page = (gridState.Page + 1);
+        CloseButton = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true,
+        CloseOnEscapeKey = true
+    };
+    #endregion
 
-        //if (_dateRange != null)
-        //{
-        //    _filter.CreatedFrom = _dateRange.Start;
-        //    _filter.CreatedTo = _dateRange.End;
-        //}
-        //else
-        //{
-        //    _filter.CreatedFrom = null;
-        //    _filter.CreatedTo = null;
-        //}
-        _filter.SortColumn = nameof(CategoryDto.Name);
-        _filter.SortDescending = true;
-        _filter.PageSize = gridState.PageSize;
-        var _sortDefinitions = gridState.SortDefinitions.FirstOrDefault();
-        if (_sortDefinitions != null)
+    #region Lifecycle Methods
+    protected override void OnInitialized()
+    {
+        // Configuración inicial si es necesaria
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task<GridData<CategoryListItemDto>> GetTableData(GridState<CategoryListItemDto> gridState)
+    {
+        try
         {
-            _filter.SortColumn = _sortDefinitions.SortBy;
-            _filter.SortDescending = _sortDefinitions.Descending;
+            _loading = true;
+            StateHasChanged(); // Forzar actualización UI
+
+            ConfigureFilter(gridState);
+            var paginatedList = await _queryMediator.QueryAsync(_filter);
+
+            return new GridData<CategoryListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
         }
-        var paginatedList = await _queryMediator.QueryAsync(_filter);
-        _loading = false;
-        return new GridData<CategoryDto>() { TotalItems = (int)paginatedList.PagedInfo.TotalRecords, Items = paginatedList.Value };
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar categorías: {ex.Message}", Severity.Error);
+            return new GridData<CategoryListItemDto>() { TotalItems = 0, Items = Enumerable.Empty<CategoryListItemDto>() };
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
     }
 
+    private void ConfigureFilter(GridState<CategoryListItemDto> gridState)
+    {
+        _filter.Page = gridState.Page + 1;
+        _filter.PageSize = gridState.PageSize;
+
+        // Configurar fechas
+        _filter.CreatedFrom = _dateRange.Start?.Date;
+        _filter.CreatedTo = _dateRange.End?.Date.AddDays(1).AddSeconds(-1); // Incluir todo el día final
+
+        // Configurar ordenamiento
+        var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
+        {
+            _filter.SortColumn = sortDefinition.SortBy;
+            _filter.SortDescending = sortDefinition.Descending;
+        }
+        else
+        {
+            // Ordenamiento por defecto
+            _filter.SortColumn = nameof(CategoryListItemDto.Name);
+            _filter.SortDescending = false;
+        }
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task RefreshData()
+    {
+        if (_dataGridRef != null)
+        {
+            await _dataGridRef.ReloadServerData();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        await RefreshData();
+    }
+
+    private async Task ClearFilters()
+    {
+        _filter = new GetCategoriesQuery();
+        _dateRange = new DateRange();
+        await RefreshData();
+    }
+
+    private void ToggleFilters()
+    {
+        _filtersVisible = !_filtersVisible;
+        StateHasChanged();
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFilters();
+        }
+    }
+    #endregion
+
+    #region CRUD Operations
     private async Task AddClick()
     {
-        var parameters = new DialogParameters { };
-        var dialog = await _dialogService.ShowAsync<NewCategoryDialog>("Nueva Categoria", parameters, _optionsDialogs);
+        var parameters = new DialogParameters();
+        var dialog = await _dialogService.ShowAsync<NewCategoryDialog>("Nueva Categoría", parameters, _dialogOptions);
         var result = await dialog.Result;
+
         if (!result!.Canceled)
         {
-            await dataGridRef.ReloadServerData();
+            await RefreshData();
+            _snackbarService.Add("Categoría creada exitosamente", Severity.Success);
         }
-
     }
 
     private async Task EditClick(int id)
     {
-        var parameters = new DialogParameters { { "CategoryId", id } };
-        var dialog = await _dialogService.ShowAsync<UpdateCategoryDialog>("Editar Categoria", parameters, _optionsDialogs);
+        var parameters = new DialogParameters { ["CategoryId"] = id };
+        var dialog = await _dialogService.ShowAsync<UpdateCategoryDialog>("Editar Categoría", parameters, _dialogOptions);
         var result = await dialog.Result;
+
         if (!result!.Canceled)
         {
-            await dataGridRef.ReloadServerData();
+            await RefreshData();
+            _snackbarService.Add("Categoría actualizada exitosamente", Severity.Success);
         }
-
     }
 
-    private async Task DeleteClick(CategoryDto item)
+    private async Task DeleteClick(CategoryListItemDto item)
     {
-        await _dialogService.ShowConfirmDialog($"¿Desea eliminar el Proyecto {item.Name}?", "Eliminar Proyecto ", async (e) =>
+
+        await _dialogService.ShowConfirmDialog($"¿Está seguro que desea eliminar la categoría '{item.Name}'?", "Eliminar Categoria", async (e) =>
         {
             try
             {
@@ -196,35 +311,30 @@
                 });
                 if (result.IsSuccess)
                 {
-                    await dataGridRef.ReloadServerData();
+                    await _dataGridRef.ReloadServerData();
                     _snackbarService.Add(result.SuccessMessage, MudBlazor.Severity.Success);
                 }
                 else
                 {
-                    _snackbarService.Add(result.Errors.FirstOrDefault() ?? "", MudBlazor.Severity.Error);
+                    _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al eliminar la categoría", MudBlazor.Severity.Error);
                 }
             }
             catch (Exception ex)
             {
-                _snackbarService.Add(ex.Message, MudBlazor.Severity.Normal);
+                _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
             }
         });
     }
-
-    private void ToggleFilters() => _filtersVisible = !_filtersVisible;
-
-    private void ApplyFilters()
+    private async Task OpenImportDialog()
     {
-        //_filter.CreatedFrom = _dateRange.Start;
-        //_filter.CreatedTo = _dateRange.End;
-        dataGridRef.ReloadServerData();
-    }
+        var parameters = new DialogParameters();
+        var dialog = await _dialogService.ShowAsync<ImportCategoriesExcel>("Importar Categoría", parameters, _dialogOptions);
+        var result = await dialog.Result;
 
-    private void ClearFilters()
-    {
-        _filter = new GetCategoriesQuery();
-        _dateRange = new DateRange();
-        dataGridRef.ReloadServerData();
+        if (!result!.Canceled)
+        {
+            await RefreshData();
+        }
     }
+    #endregion
 }
-

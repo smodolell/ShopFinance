@@ -1,5 +1,6 @@
 using BitzArt.Blazor.Auth.Server;
 using BitzArt.Blazor.Cookies;
+using Microsoft.Extensions.FileProviders;
 using ShopFinance.Application;
 using ShopFinance.Infrastructure;
 using ShopFinance.Infrastructure.Services;
@@ -23,7 +24,7 @@ builder.Services
     .AddWebApp(builder.Configuration);
 var app = builder.Build();
 
-app.UseWebApp(builder.Configuration);
+app.UseWebApp(builder.Configuration, builder.Environment);
 
 
 app.MapAuthEndpoints();

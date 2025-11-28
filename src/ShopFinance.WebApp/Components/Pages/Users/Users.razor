@@ -1,15 +1,143 @@
 ﻿@attribute [Route(PageRoute.Users)]
 @attribute [AccessPoint(AppMenu.MenuSecurity, "Usuarios")]
-@*<PageHeader Title="Usuarios" Icon="@AppMenu.MenuSecurityIcon">
-    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
-</PageHeader>*@
-<Breadcrumbs BreadcrumbItems="_items"></Breadcrumbs>
+@using ShopFinance.WebApp.Components.Pages.Users.Com
+@using ShopFinance.Application.Features.Users.Queries
+@using ShopFinance.Application.Features.Users.DTOs
+
+<PageHeader Title="Usuarios" Icon="@AppMenu.MenuSecurityIcon">
+    <Breadcrumbs BreadcrumbItems="_items"></Breadcrumbs>
+</PageHeader>
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             Class="mt-2"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="dataGridRef"
+             Loading="_loading"
+             T="UserListItemDto">
+    <ToolBarContent>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.End">
+            <MudToolBar Dense WrapContent="true" Class="py-1 px-0">
+                <MudButton Disabled="@_loading"
+                           OnClick="@(() => ApplyFilters())"
+                           StartIcon="@Icons.Material.Outlined.Refresh">
+                    @AppStrings.Refresh
+                </MudButton>
+
+                <MudButton StartIcon="@Icons.Material.Outlined.Add"
+                           OnClick="AddClick">
+                    @AppStrings.New
+                </MudButton>
+
+            </MudToolBar>
+
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <TemplateColumn>
+            <CellTemplate>
+                <MudAvatar>
+                    @if (string.IsNullOrEmpty(context.Item.AvatarUrl))
+                    {
+                        <MudText>@context.Item.UserName.First()</MudText>
+                    }
+                    else
+                    {
+                        <MudImage Src="@context.Item.AvatarUrl"></MudImage>
+                    }
+                </MudAvatar>
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Title="Nombre de Usuario" Property="x=>x.Email" />
+        <PropertyColumn Title="Nombre de Usuario" Property="x=>x.UserName" />
+        <PropertyColumn Title="Nombre Completo" Property="x=>x.FullName" />
+        <TemplateColumn HeaderStyle="white-space:nowrap;width:50px;" StickyRight="true" Resizable="false" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.Center">
+                    <MudIconButton Size="@MudBlazor.Size.Small"
+                                   Icon="@Icons.Material.Outlined.Search"
+                                   Color="Color.Success"
+                                   OnClick="()=>DetailClick(context.Item.Id)" />
+                    @*   <MudIconButton Size="@MudBlazor.Size.Small"
+                    Icon="@Icons.Material.Outlined.Edit"
+                    Color="Color.Primary"
+                    OnClick="()=>EditClick(context.Item.Id)" />*@
+                    @*<MudIconButton Size="@MudBlazor.Size.Small"
+                    Icon="@Icons.Material.Outlined.Delete"
+                    Color="Color.Error"
+                    OnClick="()=>DeleteClick(context.Item)" />*@
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+
+    <PagerContent>
+        <MudDataGridPager T="UserListItemDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText>No hay registros de <strong>Usuarios</strong></MudText>
+    </NoRecordsContent>
+</MudDataGrid>
+
 @code {
 
+    private GetUsersQuery _filter = new GetUsersQuery();
+    private DialogOptions _optionsDialogs = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+    private MudDataGrid<UserListItemDto> dataGridRef = null!;
+    private bool _loading = true;
 
+    private async Task<GridData<UserListItemDto>> GetTableData(GridState<UserListItemDto> gridState)
+    {
+        _loading = true;
+        _filter.Page = (gridState.Page + 1);
+
+
+        _filter.SortColumn = nameof(UserListItemDto.UserName);
+        _filter.SortDescending = true;
+        _filter.PageSize = gridState.PageSize;
+        var _sortDefinitions = gridState.SortDefinitions.FirstOrDefault();
+        if (_sortDefinitions != null)
+        {
+            _filter.SortColumn = _sortDefinitions.SortBy;
+            _filter.SortDescending = _sortDefinitions.Descending;
+        }
+        var paginatedList = await _queryMediator.QueryAsync(_filter);
+        _loading = false;
+        return new GridData<UserListItemDto>()
+        {
+            TotalItems = Convert.ToInt32(paginatedList.PagedInfo.TotalRecords),
+            Items = paginatedList.Value
+        };
+    }
+
+    private async Task AddClick()
+    {
+        var parameters = new DialogParameters { };
+        var dialog = await _dialogService.ShowAsync<CreateUserDialog>("Nuevo Usuario", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            await dataGridRef.ReloadServerData();
+        }
+
+    }
+
+    private void DetailClick(Guid id)
+    {
+        _navManager.NavigateTo("." + PageRoute.DetailUser + $"/{id}", true);
+    }
+
+    private void ApplyFilters()
+    {
+        dataGridRef.ReloadServerData();
+    }
 
     private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
-    {
+{
         new BreadcrumbItem("Usuarios", href: null, icon: Icons.Material.Filled.Home,disabled: true),
     };
 }

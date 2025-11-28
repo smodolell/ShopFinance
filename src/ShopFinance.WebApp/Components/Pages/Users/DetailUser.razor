@@ -1,0 +1,75 @@
+﻿@attribute [Route(PageRoute.DetailUser + "/{UserId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuSecurity, "Detalle de Usuario", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Users.Queries
+@using ShopFinance.Application.Features.Users.DTOs
+
+<PageHeader Title="Usuarios" Icon="@AppMenu.MenuSecurityIcon">
+    <Breadcrumbs BreadcrumbItems="_items" OnGoEditClick="GoEdit"></Breadcrumbs>
+</PageHeader>
+
+@if (_model != null)
+{
+    <FormSection Title="Datos del Usuario">
+        @*<ToolBarContent>
+            <MudButton StartIcon="@Icons.Material.Outlined.Edit"
+                       OnClick="EditClick">
+                @AppStrings.Edit
+            </MudButton>
+        </ToolBarContent>*@
+        <ChildContent>
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.AvatarUrl" Label=""></ReadOnlyField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.UserName" Label="Nombre de Usuario"></ReadOnlyField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.FullName" Label="Nombre Completo"></ReadOnlyField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.CreatedAt" Label="Creado"></ReadOnlyField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.UpdatedAt" Label="Actualizado"></ReadOnlyField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <ReadOnlyField Value="_model.IsActive" Label="Activo"></ReadOnlyField>
+                </MudItem>
+            </MudGrid>
+        </ChildContent>
+    </FormSection>
+}
+
+@code {
+    [Parameter]
+    public Guid UserId { get; set; }
+    private UserViewDto? _model;
+
+    private GetUserByIdQuery? _query;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_model == null)
+        {
+            var result = await _queryMediator.QueryAsync(new GetUserByIdQuery
+            {
+                UserId = UserId
+            });
+            if (result.IsSuccess)
+            {
+                _model = result.Value;
+            }
+        }
+    }
+    void GoEdit()
+    {
+        _navManager.NavigateTo("." + PageRoute.EditUser + $"/{UserId}", true);
+    }
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+{
+        new BreadcrumbItem("Usuarios", href: ("." + PageRoute.Users), icon: Icons.Material.Filled.Home),
+        new BreadcrumbItem("Detalle Usuario", href: null, icon:AppMenu.MenuSecurityIcon,disabled:true)
+    };
+}

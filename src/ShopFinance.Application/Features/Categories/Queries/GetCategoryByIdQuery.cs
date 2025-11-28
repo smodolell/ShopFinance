@@ -2,7 +2,7 @@
 
 namespace ShopFinance.Application.Features.Categories.Queries;
 
-public class GetCategoryByIdQuery : IQuery<Result<CategoryDto>>
+public class GetCategoryByIdQuery : IQuery<Result<CategoryViewDto>>
 {
     public int CategoryId { get; set; }
 }

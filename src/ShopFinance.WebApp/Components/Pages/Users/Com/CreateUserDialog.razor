@@ -1,0 +1,145 @@
+﻿@using ShopFinance.Application.Features.Users.Commands
+@using ShopFinance.WebApp.Services.Media
+@inject IUploadService UploadService
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="Create" id="MyID">
+            <FluentValidationValidator @ref="_fluentValidationValidator" />
+            <MudGrid>
+                <MudItem sm="12">
+                    <div class="d-flex justify-center">
+                        <MudAvatar Style="height:128px; width:128px; font-size:2rem;">
+                            @if (string.IsNullOrEmpty(_model.AvatarUrl))
+                            {
+                                @_model.UserName.ToUpper().FirstOrDefault()
+                            }
+                            else
+                            {
+                                <MudImage Src="@_model.AvatarUrl" />
+                            }
+                        </MudAvatar>
+                        <MudTooltip Text="Click upload a image">
+                            <MudFileUpload T="IBrowserFile" Accept=".jpg, .jpeg, .png, .webp" FilesChanged="UploadPhoto" Style="margin-top:-10px;margin-left:-15px">
+                                <ActivatorContent>
+                                    <MudIconButton Icon="@Icons.Material.Filled.PhotoCamera" />
+                                </ActivatorContent>
+                            </MudFileUpload>
+                        </MudTooltip>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.UserName"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="UserName"
+                                  For="@(() => _model.UserName)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudCheckBox For="@(() => _model.IsActive)" @bind-Value="_model.IsActive" Label="Activo" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.Password"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Password"
+                                  For="@(() => _model.Password)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.PasswordConfirm"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Password"
+                                  For="@(() => _model.PasswordConfirm)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="9" md="9">
+                    <MudTextField @bind-Value="_model.Email"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Email"
+                                  For="@(() => _model.Email)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="12" md="12">
+                    <MudTextField @bind-Value="_model.FullName"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Nombre"
+                                  For="@(() => _model.FullName)">
+                    </MudTextField>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" FullWidth="false"
+                   Color="Color.Primary"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   form="MyID">
+            Crear Usuario
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   FullWidth="false"
+                   Color="Color.Default"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   OnClick="@(() => Close())"
+                   StartIcon="@Icons.Material.Filled.Close">
+            Cerrar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private CreateUserCommand _model = new CreateUserCommand();
+    private FluentValidationValidator? _fluentValidationValidator;
+    [CascadingParameter] IMudDialogInstance? MudDialog { get; set; }
+
+
+    private async Task Create()
+    {
+
+        try
+        {
+            if (_model == null) return;
+
+            var valid = await _fluentValidationValidator!.ValidateAsync();
+            if (!valid) return;
+
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage, Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error", Severity.Error);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add(ex.Message, Severity.Error);
+        }
+
+    }
+
+    private async Task UploadPhoto(IBrowserFile file)
+    {
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(GlobalVariables.MaxAllowedSize).CopyToAsync(ms);
+        var resizedStream = await ImageProcessor.ResizeAndCompressToJpegAsync(ms, 128, 128, 80);
+        var uploadRequest = new UploadRequest(file.Name, UploadType.ProfilePicture, resizedStream.ToArray(), overwrite: true, Guid.NewGuid().ToString());
+        _model.AvatarUrl = await UploadService.UploadAsync(uploadRequest);
+        _snackbarService.Add(AppStrings.UploadSuccess, Severity.Info);
+    }
+    private void Close() => MudDialog?.Close(DialogResult.Ok(false));
+}

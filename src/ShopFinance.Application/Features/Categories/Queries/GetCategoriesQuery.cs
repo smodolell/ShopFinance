@@ -1,18 +1,20 @@
-﻿using ShopFinance.Application.Features.Categories.DTOs;
+﻿
+
+using ShopFinance.Application.Features.Categories.DTOs;
 
 namespace ShopFinance.Application.Features.Categories.Queries;
 
-public class GetCategoriesQuery : IQuery<PagedResult<List<CategoryDto>>>
+public class GetCategoriesQuery : IQuery<PagedResult<List<CategoryListItemDto>>>
 {
     private static readonly HashSet<string> _validSortColumns = new()
     {
-        nameof(CategoryDto.Code),
-        nameof(CategoryDto.Name),
+        nameof(CategoryListItemDto.Code),
+        nameof(CategoryListItemDto.Name),
     };
 
     private int _page = 1;
     private int _pageSize = 10;
-    private string _sortColumn = nameof(CategoryDto.Code);
+    private string _sortColumn = nameof(CategoryListItemDto.Code);
 
     public int Page
     {
@@ -34,10 +36,13 @@ public class GetCategoriesQuery : IQuery<PagedResult<List<CategoryDto>>>
     public string SortColumn
     {
         get => _sortColumn;
-        set => _sortColumn = _validSortColumns.Contains(value) ? value : nameof(CategoryDto.Code);
+        set => _sortColumn = _validSortColumns.Contains(value) ? value : nameof(CategoryListItemDto.Code);
     }
 
     public bool SortDescending { get; set; }
 
     public string? SearchText { get; set; }
+
+    public DateTime? CreatedFrom { get; set; }
+    public DateTime? CreatedTo { get; set; }
 }

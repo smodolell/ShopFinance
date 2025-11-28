@@ -1,165 +1,384 @@
 ﻿@attribute [Route(PageRoute.EditProduct + "/{ProductId:guid}")]
-@attribute [AccessPoint(AppMenu.MenuCatalog, "Editar Product", AccessPointType.Page)]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Editar Producto", AccessPointType.Page)]
 @using ShopFinance.Application.Features.Products.Commands
 @using ShopFinance.Application.Features.Products.DTOs
 @using ShopFinance.Application.Features.Products.Queries
-
 @inject ISelectListService _selectListService
 
 <PageHeader Title="Editar Producto" Icon="@AppMenu.MenuCatalogIcon">
-    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
 </PageHeader>
 
 @if (_model != null)
 {
-    <EditForm Model="_model" OnValidSubmit="Save">
+    <EditForm Model="_model" OnValidSubmit="HandleValidSubmit" id="editProductForm">
         <FluentValidationValidator @ref="_fluentValidationValidator" />
-        <MudGrid>
-            <MudItem xs="12" sm="6" md="3">
-                <MudSelect Margin="Margin.Dense" T="int?"
-                           @bind-Value="_model.CategoryId" 
+        <MudGrid Spacing="2">
+            <!-- Categoría -->
+            <MudItem xs="12" sm="6" md="4">
+                <MudSelect Margin="Margin.Dense"
+                           T="int?"
+                           @bind-Value="_model.CategoryId"
                            For="@(() => _model.CategoryId)"
-                           Label="Categoria" 
-                           Variant="Variant.Outlined">
-                    @if (_listCatetory != null)
+                           Label="Categoría *"
+                           Required="true"
+                           Variant="Variant.Outlined"
+                           Disabled="_isSubmitting || _isLoading"
+                           HelperText="Seleccione una categoría">
+                    @if (_categories != null && _categories.Any())
                     {
-                        @foreach (var item in _listCatetory)
+                        @foreach (var item in _categories)
                         {
-                            <MudSelectItem T="int?" Value="@(Convert.ToInt32(item.Value))">@item.Text </MudSelectItem>
+                            <MudSelectItem T="int?" Value="@(Convert.ToInt32(item.Value))">@item.Text</MudSelectItem>
                         }
+                    }
+                    else
+                    {
+                        <MudSelectItem T="int?" Value="null" Disabled="true">Cargando categorías...</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
-            <MudItem xs="12" sm="12" md="12">
+
+            <!-- Código y Estado -->
+            <MudItem xs="12" sm="6" md="4">
+                <MudTextField @bind-Value="_model.Code"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="Código"
+                              For="@(() => _model.Code)"
+                              Disabled="_isSubmitting"
+                              HelperText="Código único del producto (opcional)">
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudTextField @bind-Value="_model.CodeSku"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="SKU"
+                              For="@(() => _model.CodeSku)"
+                              Disabled="_isSubmitting"
+                              HelperText="Código único para inventario (ej: TSH-RED-M)">
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudEnumSelect TEnum="ProductState?"
+                               @bind-Value="_model.State"
+                               Margin="Margin.Dense"
+                               Label="Estado"
+                               Clearable="true"
+                               Variant="Variant.Outlined"
+                               Disabled="_isSubmitting" />
+            </MudItem>
+
+            <!-- Información Básica -->
+            <MudItem xs="12">
                 <MudTextField @bind-Value="_model.Name"
                               Variant="Variant.Outlined"
                               Margin="Margin.Dense"
-                              Label="Nombre del Producto"
-                              For="@(() => _model.Name)">
+                              Label="Nombre *"
+                              Required="true"
+                              For="@(() => _model.Name)"
+                              Disabled="_isSubmitting"
+                              HelperText="Nombre descriptivo del producto">
                 </MudTextField>
             </MudItem>
-            <MudItem xs="12" sm="12" md="12">
+
+            <MudItem xs="12">
                 <MudTextField @bind-Value="_model.Description"
+                              Lines="3"
                               Variant="Variant.Outlined"
                               Margin="Margin.Dense"
                               Label="Descripción"
-                              For="@(() => _model.Description)">
+                              For="@(() => _model.Description)"
+                              Disabled="_isSubmitting"
+                              HelperText="Descripción detallada del producto">
                 </MudTextField>
             </MudItem>
-            <MudItem xs="12" sm="12" md="12">
-                <MudNumericField @bind-Value="_model.Price"
+
+            <!-- Precios -->
+            <MudItem xs="12" sm="6" md="4">
+                <MudNumericField @bind-Value="_model.CostPrice"
                                  Variant="Variant.Outlined"
                                  Margin="Margin.Dense"
-                                 Label="Precio"
-                                 For="@(() => _model.Price)">
+                                 Label="Precio de Costo *"
+                                 Required="true"
+                                 For="@(() => _model.CostPrice)"
+                                 Disabled="_isSubmitting"
+                                 Adornment="Adornment.Start"
+                                 AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                 AdornmentColor="Color.Default"
+                                 HelperText="Costo de adquisición">
                 </MudNumericField>
             </MudItem>
-            <MudItem xs="12" sm="12" md="12">
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudNumericField @bind-Value="_model.SalePrice"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Label="Precio de Venta *"
+                                 Required="true"
+                                 For="@(() => _model.SalePrice)"
+                                 Disabled="_isSubmitting"
+                                 Adornment="Adornment.Start"
+                                 AdornmentIcon="@Icons.Material.Filled.PointOfSale"
+                                 AdornmentColor="Color.Success"
+                                 HelperText="Precio de venta al público">
+                </MudNumericField>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudNumericField @bind-Value="_profitMargin"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Label="Margen de Ganancia"
+                                 Disabled="true"
+                                 Adornment="Adornment.End"
+                                 AdornmentText="%"
+                                 AdornmentColor="Color.Info"
+                                 HelperText="Margen calculado automáticamente">
+                </MudNumericField>
+            </MudItem>
+
+            <!-- Stock -->
+            <MudItem xs="12" sm="6" md="4">
                 <MudNumericField @bind-Value="_model.Stock"
                                  Variant="Variant.Outlined"
                                  Margin="Margin.Dense"
-                                 Label="Stock"
-                                 For="@(() => _model.Stock)">
+                                 Label="Stock *"
+                                 Required="true"
+                                 For="@(() => _model.Stock)"
+                                 Disabled="_isSubmitting"
+                                 Min="0"
+                                 HelperText="Cantidad actual en inventario">
                 </MudNumericField>
             </MudItem>
-            <MudItem xs="12" sm="12" md="12">
+
+            <MudItem xs="12" sm="6" md="4">
                 <MudNumericField @bind-Value="_model.StockMin"
                                  Variant="Variant.Outlined"
                                  Margin="Margin.Dense"
-                                 Label="StockMin"
-                                 For="@(() => _model.StockMin)">
+                                 Label="Stock Mínimo *"
+                                 Required="true"
+                                 For="@(() => _model.StockMin)"
+                                 Disabled="_isSubmitting"
+                                 Min="0"
+                                 HelperText="Nivel mínimo de inventario">
                 </MudNumericField>
             </MudItem>
-            <MudItem xs="12" sm="12" md="12">
-                <MudStack Justify="Justify.FlexEnd">
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudNumericField @bind-Value="_model.StockMax"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Label="Stock Máximo"
+                                 For="@(() => _model.StockMax)"
+                                 Disabled="_isSubmitting"
+                                 Min="0"
+                                 HelperText="Nivel máximo de inventario (opcional)">
+                </MudNumericField>
+            </MudItem>
+
+            <!-- Información adicional -->
+            <MudItem xs="12">
+                <MudText Typo="Typo.caption" Color="Color.Default">
+                    Los campos marcados con * son obligatorios
+                </MudText>
+            </MudItem>
+
+            <!-- Acciones -->
+            <MudItem xs="12">
+                <MudStack Justify="Justify.FlexEnd" Spacing="2" Row="true">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               OnClick="NavigateToProducts"
+                               Disabled="_isSubmitting"
+                               StartIcon="@Icons.Material.Filled.ArrowBack">
+                        Cancelar
+                    </MudButton>
                     <MudButton Variant="Variant.Filled"
-                               ButtonType="ButtonType.Submit"
                                Color="Color.Primary"
-                               Class="ml-auto">
-                        Guardar
+                               ButtonType="ButtonType.Submit"
+                               Disabled="_isSubmitting"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)">
+                        @(_isSubmitting ? "Guardando..." : "Guardar Cambios")
                     </MudButton>
                 </MudStack>
             </MudItem>
         </MudGrid>
     </EditForm>
 }
+else if (_isLoading)
+{
+    <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Style="height: 300px;">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        <MudText Typo="Typo.body2">Cargando producto...</MudText>
+    </MudStack>
+}
+else
+{
+    <MudAlert Severity="Severity.Error" Icon="@Icons.Material.Filled.Error">
+        No se pudo cargar el producto. Verifique que el producto exista.
+    </MudAlert>
+}
 
 @code {
+
+    
+    
+    #region Parameters and Fields
     [Parameter]
     public Guid ProductId { get; set; }
 
-
     private UpdateProductCommand? _model;
-    private List<SelectListItemDto>? _listCatetory;
+    private List<SelectListItemDto>? _categories;
     private FluentValidationValidator? _fluentValidationValidator;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+    private double? _profitMargin;
+    #endregion
 
+
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+    {
+        new BreadcrumbItem("Productos", href: PageRoute.Products),
+        new BreadcrumbItem("Editar Producto", href: null, disabled: true)
+    };
+    #endregion
+
+    #region Lifecycle Methods
     protected override async Task OnInitializedAsync()
     {
-        if (_listCatetory == null)
+        await LoadInitialData();
+    }
+
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
         {
-            _listCatetory = await _selectListService.Categories();
+            _isLoading = true;
+
+            // Cargar categorías
+            _categories = await _selectListService.Categories();
+
+            // Cargar datos del producto
+            await LoadProductData();
         }
-        if (_model == null)
+        catch (Exception ex)
         {
-            await InitialData();
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
-    private async Task InitialData()
+    private async Task LoadProductData()
     {
         var result = await _queryMediator.QueryAsync(new GetProductByIdQuery
         {
             ProductId = ProductId
         });
 
-        if (result.IsSuccess)
+        if (result.IsSuccess && result.Value != null)
         {
             var product = result.Value;
             _model = new UpdateProductCommand
             {
                 ProductId = product.ProductId,
                 CategoryId = product.CategoryId,
+                Code = product.Code,
                 Name = product.Name,
                 Description = product.Description,
-                Price = product.Price,
+                CostPrice = product.CostPrice,
+                SalePrice = product.SalePrice,
                 Stock = product.Stock,
                 StockMin = product.StockMin,
+                StockMax = product.StockMax,
+                State = product.State
             };
+
+        }
+        else
+        {
+            _snackbarService.Add("No se pudo cargar el producto", Severity.Error);
         }
     }
+    #endregion
 
+    #region Event Handlers
 
-    private async Task Save()
+    private async Task HandleValidSubmit()
     {
+        if (_isSubmitting || _model == null) return;
+
+        if (!await ValidateFormAsync())
+            return;
+
+        await UpdateProductAsync();
+    }
+
+    private async Task<bool> ValidateFormAsync()
+    {
+        if (_fluentValidationValidator != null)
+        {
+            var isValid = await _fluentValidationValidator.ValidateAsync(options =>
+            {
+                options.IncludeAllRuleSets();
+            });
+
+            if (!isValid)
+            {
+                _snackbarService.Add("Por favor, corrige los errores del formulario", Severity.Warning);
+                return false;
+            }
+        }
+        return true;
+    }
+    #endregion
+
+    #region CRUD Operations
+    private async Task UpdateProductAsync()
+    {
+        if (_model == null) return;
+        _isSubmitting = true;
+
         try
         {
-            if (_model == null) return;
-
-            var valid = await _fluentValidationValidator!.ValidateAsync();
-            if (!valid) return;
-
             var result = await _commandMediator.SendAsync(_model);
 
             if (result.IsSuccess)
             {
-                _snackbarService.Add(result.SuccessMessage, Severity.Success);
-                _navManager.NavigateTo("." + PageRoute.Products, true);
+                _snackbarService.Add(result.SuccessMessage ?? "Producto actualizado exitosamente", Severity.Success);
+                await Task.Delay(500); // Pequeño delay para mostrar el mensaje
+                NavigateToProducts();
             }
             else
             {
-                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error", Severity.Error);
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "Error al actualizar el producto";
+                _snackbarService.Add(errorMessage, Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            _snackbarService.Add(ex.Message, Severity.Error);
+            _snackbarService.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
         }
     }
 
-    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    private void NavigateToProducts()
     {
-       new BreadcrumbItem("Productos", href: ("." + PageRoute.Products), icon: Icons.Material.Filled.Home),
-       new BreadcrumbItem("Editar Producto", href: null, icon:AppMenu.MenuCatalogIcon,disabled:true)
-   };
+        _navManager.NavigateTo("." + PageRoute.Products);
+    }
+    #endregion
 
 }

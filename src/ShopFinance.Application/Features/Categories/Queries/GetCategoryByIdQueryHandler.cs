@@ -2,7 +2,7 @@
 
 namespace ShopFinance.Application.Features.Categories.Queries;
 
-internal class GetCategoryByIdQueryHandler : IQueryHandler<GetCategoryByIdQuery, Result<CategoryDto>>
+internal class GetCategoryByIdQueryHandler : IQueryHandler<GetCategoryByIdQuery, Result<CategoryViewDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
 
@@ -10,7 +10,7 @@ internal class GetCategoryByIdQueryHandler : IQueryHandler<GetCategoryByIdQuery,
     {
         _unitOfWork = unitOfWork;
     }
-    public async Task<Result<CategoryDto>> HandleAsync(GetCategoryByIdQuery message, CancellationToken cancellationToken = default)
+    public async Task<Result<CategoryViewDto>> HandleAsync(GetCategoryByIdQuery message, CancellationToken cancellationToken = default)
     {
 
         var category = await _unitOfWork.Categories.GetByIdAsync(message.CategoryId, cancellationToken);
@@ -18,7 +18,7 @@ internal class GetCategoryByIdQueryHandler : IQueryHandler<GetCategoryByIdQuery,
         {
             return Result.NotFound("NO existe");
         }
-        var result = category.Adapt<CategoryDto>();
+        var result = category.Adapt<CategoryViewDto>();
         return Result.Success(result);
     }
 }

@@ -8,8 +8,7 @@ public class GetUsersQuery : IQuery<PagedResult<List<UserListItemDto>>>
     {
         nameof(UserListItemDto.Id),
         nameof(UserListItemDto.UserName),
-        nameof(UserListItemDto.FirstName),
-        nameof(UserListItemDto.LastName),
+        nameof(UserListItemDto.FullName),
     };
 
     private int _page = 1;

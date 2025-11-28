@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
+﻿using BlazorDownloadFile;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.FileProviders;
 using MudBlazor;
 using MudBlazor.Services;
 using ShopFinance.Application.Common.Constants;
@@ -26,6 +28,7 @@ public static class DependencyInjection
             config.SnackbarConfiguration.ShowTransitionDuration = 500;
             config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
         });
+        services.AddBlazorDownloadFile(ServiceLifetime.Scoped);
 
         services.AddScoped<ILayoutService, LayoutService>();
         services.AddScoped<ThemeState>();
@@ -60,7 +63,7 @@ public static class DependencyInjection
         return services;
     }
 
-    public static WebApplication UseWebApp(this WebApplication app, IConfiguration config)
+    public static WebApplication UseWebApp(this WebApplication app, IConfiguration config, IWebHostEnvironment webHostEnvironment)
     {
 
         // Configure the HTTP request pipeline.
@@ -73,6 +76,13 @@ public static class DependencyInjection
 
         app.UseHttpsRedirection();
         app.UseStaticFiles();
+        var uploadPath = config["FileUpload:UploadPath"] ?? "wwwroot/uploads";
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(
+                Path.Combine(webHostEnvironment.ContentRootPath, uploadPath)),
+            RequestPath = "/uploads"
+        });
 
         app.UseRouting();
 

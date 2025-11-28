@@ -1,0 +1,164 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Features.Categories.Commands
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="HandleValidSubmit" id="createCategoryForm">
+            <FluentValidationValidator @ref="_fluentValidationValidator" />
+            <DataAnnotationsValidator />
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.Code"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Código *"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Code)"
+                                  Disabled="_isSubmitting"
+                                  HelperText="Código único de la categoría">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Nombre *"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Name)"
+                                  Disabled="_isSubmitting"
+                                  HelperText="Nombre descriptivo de la categoría">
+                    </MudTextField>
+                </MudItem>
+
+                @* Espacio para campos adicionales si los necesitas *@
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Color="Color.Default">
+                        Los campos marcados con * son obligatorios
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudSpacer />
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   Size="Size.Medium"
+                   OnClick="Close"
+                   Disabled="_isSubmitting"
+                   StartIcon="@Icons.Material.Filled.Close">
+            @AppStrings.Cancel
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   form="createCategoryForm"
+                   Disabled="_isSubmitting"
+                   Loading="_isSubmitting"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)">
+            @(_isSubmitting ? "Creando..." : AppStrings.Create)
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    private CreateCategoryCommand _model = new();
+    private bool _isSubmitting = false;
+    private FluentValidationValidator? _fluentValidationValidator;
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (MudDialog != null)
+        {
+            await MudDialog.SetOptionsAsync(new DialogOptions
+            {
+                CloseButton = true,
+                BackdropClick = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true
+            });
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (_isSubmitting) return;
+
+        // Validación manual adicional
+        if (!await ValidateFormAsync())
+            return;
+
+        await SubmitCategoryAsync();
+    }
+
+    private async Task<bool> ValidateFormAsync()
+    {
+        if (_fluentValidationValidator != null)
+        {
+            var isValid = await _fluentValidationValidator.ValidateAsync(options =>
+            {
+                options.IncludeAllRuleSets();
+            });
+
+            if (!isValid)
+            {
+                _snackbarService.Add("Por favor, corrige los errores del formulario", Severity.Warning);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private async Task SubmitCategoryAsync()
+    {
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage ?? "Categoría creada exitosamente", Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "Error al crear la categoría";
+                _snackbarService.Add(errorMessage, Severity.Error);
+
+                // Opcional: Log del error para debugging
+                Console.WriteLine($"Error creating category: {errorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error inesperado: {ex.Message}", Severity.Error);
+
+            // Opcional: Log de la excepción
+            Console.WriteLine($"Exception creating category: {ex}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Close()
+    {
+        if (!_isSubmitting)
+        {
+            MudDialog?.Cancel();
+        }
+    }
+
+
+}

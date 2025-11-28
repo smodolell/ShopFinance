@@ -1,0 +1,129 @@
+﻿@attribute [Route(PageRoute.EditUser + "/{UserId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuSecurity, "Editar de Usuario", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Users.Commands
+@using ShopFinance.Application.Features.Users.DTOs
+@using ShopFinance.Application.Features.Users.Queries
+@using ShopFinance.WebApp.Services.Media
+@inject IUploadService UploadService
+<PageHeader Title="Usuarios" Icon="@AppMenu.MenuSecurityIcon">
+    <Breadcrumbs BreadcrumbItems="_items" OnSaveButtonClick="OnSubmit"></Breadcrumbs>
+</PageHeader>
+@if (_model != null)
+{
+    <EditForm Model="_model">
+        <FluentValidationValidator @ref="_fluentValidationValidator" />
+        <MudGrid>
+            <MudItem sm="12">
+                <div class="d-flex justify-center">
+                    <MudAvatar Style="height:128px; width:128px; font-size:2rem;">
+                        @if (string.IsNullOrEmpty(_model.AvatarUrl))
+                        {
+                            @_model.UserName.ToUpper().FirstOrDefault()
+                        }
+                        else
+                        {
+                            <MudImage Src="@_model.AvatarUrl" />
+                        }
+                    </MudAvatar>
+                    <MudTooltip Text="Click upload a image">
+                        <MudFileUpload T="IBrowserFile" Accept=".jpg, .jpeg, .png, .webp" FilesChanged="UploadPhoto" Style="margin-top:-10px;margin-left:-15px">
+                            <ActivatorContent>
+                                <MudIconButton Icon="@Icons.Material.Filled.PhotoCamera" />
+                            </ActivatorContent>
+                        </MudFileUpload>
+                    </MudTooltip>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <MudTextField @bind-Value="_model.FullName"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Label="Codigo"
+                              For="@(() => _model.FullName)">
+                </MudTextField>
+            </MudItem>
+
+        </MudGrid>
+    </EditForm>
+}
+@code {
+    [Parameter]
+    public Guid UserId { get; set; }
+    private UpdateUserCommand? _model;
+
+    private bool _saving = false;
+    private FluentValidationValidator? _fluentValidationValidator;
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+{
+        new BreadcrumbItem("Usuarios", href: ("." + PageRoute.Users), icon: Icons.Material.Filled.Home),
+        new BreadcrumbItem("Detalle Usuario", href: null, icon:AppMenu.MenuSecurityIcon,disabled:true)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_model == null)
+        {
+            await InitialData();
+        }
+    }
+
+    private async Task InitialData()
+    {
+        var result = await _queryMediator.QueryAsync(new GetUserByIdQuery
+        {
+            UserId = UserId
+        });
+
+        if (result.IsSuccess)
+        {
+            var dto = result.Value;
+            _model = new UpdateUserCommand
+            {
+                UserId = dto.UserId,
+                FullName = dto.FullName,
+                AvatarUrl = dto.AvatarUrl
+            };
+        }
+    }
+
+
+    private async Task OnSubmit()
+    {
+        if (_model == null) return;
+
+        try
+        {
+            _saving = true;
+
+            var valid = await _fluentValidationValidator!.ValidateAsync();
+            if (!valid) return;
+
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage, Severity.Success);
+                _navManager.NavigateTo("." + PageRoute.DetailUser + $"/{UserId}", true);
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error", Severity.Error);
+            }
+
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    private async Task UploadPhoto(IBrowserFile file)
+    {
+        if (_model == null) return;
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(GlobalVariables.MaxAllowedSize).CopyToAsync(ms);
+        var resizedStream = await ImageProcessor.ResizeAndCompressToJpegAsync(ms, 128, 128, 80);
+        var uploadRequest = new UploadRequest(file.Name, UploadType.ProfilePicture, resizedStream.ToArray(), overwrite: true, Guid.NewGuid().ToString());
+        _model.AvatarUrl = await UploadService.UploadAsync(uploadRequest);
+        _snackbarService.Add(AppStrings.UploadSuccess, Severity.Info);
+    }
+}

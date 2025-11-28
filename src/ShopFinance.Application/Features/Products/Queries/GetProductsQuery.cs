@@ -39,7 +39,7 @@ public class GetProductsQuery : IQuery<PagedResult<List<ProductListItemDto>>>
     }
 
     public bool SortDescending { get; set; }
-
+    public int? CategoryId { get; set; }
 
     public ProductState? State { get; set; }
 

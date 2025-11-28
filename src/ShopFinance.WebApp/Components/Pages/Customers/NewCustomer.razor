@@ -1,0 +1,209 @@
+﻿@attribute [Route(PageRoute.NewCustomer)]
+@attribute [AccessPoint(AppMenu.MenuCustomers, "Nuevo Cliente")]
+@using ShopFinance.Application.Features.Customers.Commands
+@using ShopFinance.Application.Features.Customers.DTOs
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Nuevo Cliente" Icon="@AppMenu.MenuCustomersIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+<EditForm Model="_model" OnValidSubmit="HandleValidSubmit" id="createCustomerForm">
+    <FluentValidationValidator @ref="_fluentValidationValidator" />
+    <MudGrid Spacing="2">
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_model.Identifier"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Label="Identificador"
+                          Required="true"
+                          For="@(() => _model.Identifier)"
+                          Disabled="_isSubmitting"
+                          HelperText="Código o documento de identificación">
+            </MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_model.FirstName"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Label="Nombres"
+                          Required="true"
+                          For="@(() => _model.FirstName)"
+                          Disabled="_isSubmitting"
+                          HelperText="Nombres del cliente">
+            </MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_model.LastName"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Label="Apellidos"
+                          Required="true"
+                          For="@(() => _model.LastName)"
+                          Disabled="_isSubmitting"
+                          HelperText="Apellidos del cliente">
+            </MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudDatePicker @bind-Date="_model.Birthdate"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Label="Fecha de Nacimiento"
+                           Required="true"
+                           For="@(() => _model.Birthdate)"
+                           Disabled="_isSubmitting"
+                           DateFormat="dd/MM/yyyy"
+                           HelperText="Fecha de nacimiento del cliente">
+            </MudDatePicker>
+        </MudItem>
+        <MudItem xs="12">
+            <MudText Typo="Typo.caption" Color="Color.Default">
+                Los campos marcados con * son obligatorios
+            </MudText>
+        </MudItem>
+        <MudItem xs="12">
+            <MudStack Justify="Justify.FlexEnd" Spacing="2" Row="true">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           OnClick="NavigateToCustomers"
+                           Disabled="_isSubmitting"
+                           StartIcon="@Icons.Material.Filled.ArrowBack">
+                    Cancelar
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           ButtonType="ButtonType.Submit"
+                           form="createCustomerForm"
+                           Disabled="_isSubmitting"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)">
+                    @(_isSubmitting ? "Creando..." : "Crear Cliente")
+                </MudButton>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+@code {
+    #region Fields
+    private CreateCustomerCommand _model = new();
+    private FluentValidationValidator? _fluentValidationValidator;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+    #endregion
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Clientes", href: PageRoute.Customers),
+        new BreadcrumbItem("Nuevo Cliente", href: null, disabled: true)
+    };
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _isLoading = true;
+            // Inicializar la fecha de nacimiento con una fecha por defecto si es necesario
+            if (_model.Birthdate == default)
+            {
+                _model.Birthdate = DateTime.Today.AddYears(-18); // Por defecto 18 años atrás
+            }
+            await Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    #endregion
+
+    #region Event Handlers
+    private async Task HandleValidSubmit()
+    {
+        if (_isSubmitting) return;
+
+        if (!await ValidateFormAsync())
+            return;
+
+        await CreateCustomerAsync();
+    }
+
+    private async Task<bool> ValidateFormAsync()
+    {
+        if (_fluentValidationValidator != null)
+        {
+            var isValid = await _fluentValidationValidator.ValidateAsync(options =>
+            {
+                options.IncludeAllRuleSets();
+            });
+
+            if (!isValid)
+            {
+                _snackbarService.Add("Por favor, corrige los errores del formulario", Severity.Warning);
+                return false;
+            }
+        }
+
+        // Validación adicional de fecha
+        if (_model.Birthdate > DateTime.Today)
+        {
+            _snackbarService.Add("La fecha de nacimiento no puede ser futura", Severity.Warning);
+            return false;
+        }
+
+        return true;
+    }
+    #endregion
+
+    #region CRUD Operations
+    private async Task CreateCustomerAsync()
+    {
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(result.SuccessMessage ?? "Cliente creado exitosamente", Severity.Success);
+                await Task.Delay(500); // Pequeño delay para mostrar el mensaje
+                NavigateToCustomers();
+            }
+            else
+            {
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "Error al crear el cliente";
+                _snackbarService.Add(errorMessage, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void NavigateToCustomers()
+    {
+        _navManager.NavigateTo("." + PageRoute.Customers);
+    }
+    #endregion
+}

@@ -46,12 +46,13 @@ public static class DependencyInjection
         // 3. Identity Core
         services.AddIdentity<User, Role>(options =>
         {
-            options.Password.RequiredLength = 6;
+            // Configuración de Password
             options.Password.RequireDigit = true;
             options.Password.RequireLowercase = true;
             options.Password.RequireUppercase = true;
-            options.Password.RequireNonAlphanumeric = false;
-            options.User.RequireUniqueEmail = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequiredLength = 6;
+            options.Password.RequiredUniqueChars = 1;
 
             // Opciones adicionales recomendadas
             options.SignIn.RequireConfirmedAccount = false;
@@ -61,64 +62,13 @@ public static class DependencyInjection
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
-        // 4. Authentication & Authorization
-        //services.AddAuthentication(options =>
-        //{
-        //    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-        //})
-        //.AddJwtBearer();
-
-        // Configuración asíncrona de JWT
-        //services.AddSingleton<IConfigureOptions<JwtBearerOptions>, AsyncJwtBearerOptionsSetup>();
-        //services.AddSingleton<IAuthorizationHandler, ApiAuthorizeHandler>();
-        //services.AddAuthorizationCore(options =>
-        //{
-        //    //// Políticas de autorización
-        //    //options.AddPolicy("AdminOnly", policy =>
-        //    //    policy.RequireRole("Admin"));
-
-        //    //options.AddPolicy("UserOnly", policy =>
-        //    //    policy.RequireRole("User", "Admin"));
-
-        //    // Política por defecto
-        //    //options.FallbackPolicy = new AuthorizationPolicyBuilder()
-        //    //    .RequireAuthenticatedUser()
-        //    //    .Build();
-        //});
-        //services.AddAuthorization(options =>
-        //{
-        //    options.AddPolicy("ApiAuthorizePolicy", policy =>
-        //    {
-        //        policy.RequireAuthenticatedUser(); // 要求用户已登录
-        //        policy.Requirements.Add(new ApiAuthorizeRequirement());
-        //    });
-        //});
-
-
-        // 5. Servicios de Acceso HTTP y Estado
         services.AddHttpContextAccessor();
-        //services.AddCascadingAuthenticationState();
-
-        // 6. Servicios de Autenticación JWT
-        //services.AddSingleton<IAuthorizationMiddlewareResultHandler, BlazorAuthorizationMiddlewareResultHandler>();
         services.AddScoped<IJwtConfigurationProvider, JwtConfigurationProvider>();
-        //services.AddScoped<JwtKeyResolver>();
-        //services.AddScoped<IJwtHelper, JwtHelper>();
-        //services.AddScoped<ITokenStore, CookieTokenStore>();
-
-        
-        
-
-        // 7. Proveedores de Estado de Autenticación
-        //services.AddScoped<JwtAuthStateProvider>();
-        //services.AddScoped<IAuthStateService>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
-        //services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
-
-        // 8. Servicios de Aplicación
-        //services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IConfigurationService, ConfigurationService>();
+        services.AddScoped<IUploadService, LocalFileUploadService>();
 
-        // 9. Repositorios
+
+        //Repositorios
         services.AddScoped<IDynamicSorter, DynamicSorter>();
         services.AddScoped<IPaginator, Paginator>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();

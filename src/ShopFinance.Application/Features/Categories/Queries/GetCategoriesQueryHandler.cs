@@ -4,7 +4,7 @@ using ShopFinance.Domain.Specifications;
 
 namespace ShopFinance.Application.Features.Categories.Queries;
 
-internal class GetCategoriesQueryHandler : IQueryHandler<GetCategoriesQuery, PagedResult<List<CategoryDto>>>
+internal class GetCategoriesQueryHandler : IQueryHandler<GetCategoriesQuery, PagedResult<List<CategoryListItemDto>>>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPaginator _paginator;
@@ -16,14 +16,15 @@ internal class GetCategoriesQueryHandler : IQueryHandler<GetCategoriesQuery, Pag
         _paginator = paginator;
         _sorter = sorter;
     }
-    public async Task<PagedResult<List<CategoryDto>>> HandleAsync(GetCategoriesQuery message, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<List<CategoryListItemDto>>> HandleAsync(GetCategoriesQuery message, CancellationToken cancellationToken = default)
     {
+        var spec = new CategorySpec(message.SearchText,message.CreatedFrom,message.CreatedTo);
 
-        var query = _unitOfWork.Categories.ApplySpecification(new CategorySpec { SearchText = message.SearchText });
+        var query = _unitOfWork.Categories.ApplySpecification(spec);
 
         query = _sorter.ApplySort(query, message.SortColumn, message.SortDescending);
 
-        return await _paginator.PaginateAsync<Category, CategoryDto>(
+        return await _paginator.PaginateAsync<Category, CategoryListItemDto>(
             query, 
             message.Page,
             message.PageSize,

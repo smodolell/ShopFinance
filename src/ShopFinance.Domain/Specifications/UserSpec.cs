@@ -11,8 +11,7 @@ public class UserSpec : Specification<User>
         {
             Query.Where(u =>
                 (u.UserName != null && u.UserName.Contains(searchText)) ||
-                u.FirstName.Contains(searchText) ||
-                u.LastName.Contains(searchText)
+                u.FullName.Contains(searchText)
             );
         }
 

@@ -39,8 +39,8 @@ internal class UserInitializer : IHostedService
                 adminUser = User.Create(Guid.NewGuid(),
                     adminEmail,
                     adminEmail,
-                    "Sergio",
-                    "Modolell");
+                    "Sergio Modolell"
+                    ,null);
            
 
                 var createResult = await userManager.CreateAsync(adminUser, adminPassword);
