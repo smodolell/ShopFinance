@@ -8,9 +8,10 @@ public class CustomerSpec : Specification<Customer>
     {
         if (!string.IsNullOrWhiteSpace(searchText))
         {
+            searchText = searchText.Trim().ToLower();
             Query.Where(u =>
-                u.FirstName.Contains(searchText) ||
-                u.LastName.Contains(searchText) ||
+                u.FirstName.ToLower().Contains(searchText) ||
+                u.LastName.ToLower().Contains(searchText) ||
                 u.Identifier.Contains(searchText)
             );
         }

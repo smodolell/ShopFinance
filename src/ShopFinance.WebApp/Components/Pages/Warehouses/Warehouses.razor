@@ -1,0 +1,353 @@
+﻿@attribute [Route(PageRoute.Warehouses)]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Almacenes")]
+@using ShopFinance.Application.Features.Warehouses.Commands
+@using ShopFinance.Application.Features.Warehouses.DTOs
+@using ShopFinance.Application.Features.Warehouses.Queries
+@using ShopFinance.WebApp.Components.Pages.Warehouses.Com;
+@using ShopFinance.Domain.Enums
+
+<PageHeader Title="Almacenes" Icon="@AppMenu.MenuCatalogIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+<MudDrawer @bind-Open="@_openFilter" Fixed="false" Width="350px" Anchor="Anchor.Right" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Filtros de búsqueda</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing="2" Class="pa-4">
+            <MudItem xs="12">
+                <MudDateRangePicker @bind-DateRange="_createdDateRange"
+                                    Label="Fecha de creación"
+                                    Margin="Margin.Dense"
+                                    Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButtonGroup Size="Size.Small" Variant="Variant.Filled">
+                    <MudButton Color="Color.Secondary"
+                               OnClick="OnCancelFilter">
+                        Cancelar
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="OnClearFilter"
+                               Disabled="_loading">
+                        Limpiar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="ApplyFilters"
+                               Disabled="_loading">
+                        Filtrar
+                    </MudButton>
+                </MudButtonGroup>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="_dataGridRef"
+             Loading="_loading"
+             T="WarehouseListItemDto">
+    <ToolBarContent>
+        <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+            <MudTextField T="string"
+                          ValueChanged="@(s=>OnSearch(s))"
+                          Placeholder="Buscar por código, nombre..."
+                          Adornment="Adornment.Start"
+                          Clearable="true"
+                          Class="flex-grow-0"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small">
+            </MudTextField>
+            <MudIconButton Icon="@Icons.Material.Outlined.FilterAlt"
+                           Class="align-self-end pa-1"
+                           Size="Size.Medium"
+                           OnClick="OnFilterClicked" />
+        </MudStack>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+            <MudTooltip Text="Actualizar">
+                <MudIconButton Icon="@Icons.Material.Outlined.Refresh"
+                               Size="Size.Small"
+                               Color="Color.Info"
+                               OnClick="RefreshData"
+                               Disabled="_loading" />
+            </MudTooltip>
+            <MudTooltip Text="Nuevo Almacén">
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.Warehouse"
+                           OnClick="AddClick"
+                           Disabled="_loading">
+                    @AppStrings.New
+                </MudButton>
+            </MudTooltip>
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <HierarchyColumn T="WarehouseListItemDto" />
+        <PropertyColumn Title="Código" Property="x=>x.Code" StickyLeft="true" />
+        <PropertyColumn Title="Nombre" Property="x=>x.Name" StickyLeft="true" />
+        <PropertyColumn Title="Tipo" Property="x=>x.Type" />
+        <PropertyColumn Title="Estado" Property="x=>x.IsActive">
+            <CellTemplate>
+                <MudChip Size="Size.Small"
+                         Color="@(context.Item.IsActive ? Color.Success : Color.Error)"
+                         Variant="Variant.Filled">
+                    @(context.Item.IsActive ? "Activo" : "Inactivo")
+                </MudChip>
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Title="Fecha Creación" Property="x=>x.CreatedAt" Format="dd/MM/yyyy" />
+
+        <TemplateColumn HeaderStyle="width:120px;min-width:120px;" StickyRight="true" Resizable="false" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Edit"
+                                       Color="Color.Info"
+                                       OnClick="() => EditClick(context.Item.Id)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Delete"
+                                       Color="Color.Error"
+                                       OnClick="() => DeleteClick(context.Item)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <ChildRowContent>
+        <MudGrid Spacing="2" Class="py-2">
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.Description" Label="Descripción"></ReadOnlyField>
+            </MudItem>
+        </MudGrid>
+    </ChildRowContent>
+    <PagerContent>
+        <MudDataGridPager T="WarehouseListItemDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="py-4">
+            <MudIcon Icon="@Icons.Material.Outlined.Warehouse" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay almacenes registrados
+        </MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    </LoadingContent>
+</MudDataGrid>
+
+@code {
+    #region Fields
+    private MudDataGrid<WarehouseListItemDto> _dataGridRef = null!;
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Almacenes", href: null, disabled: true)
+    };
+
+    private GetWarehousesQuery _filter = new();
+    private GetWarehousesQuery _origFilter = new();
+    private DateRange _createdDateRange = new();
+    private bool _loading = false;
+    private bool _openFilter;
+    private DialogOptions _optionsDialogs = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _loading = true;
+            await Task.CompletedTask; // Cargar datos iniciales si es necesario
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<GridData<WarehouseListItemDto>> GetTableData(GridState<WarehouseListItemDto> gridState)
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            ConfigureFilter(gridState);
+            var paginatedList = await _queryMediator.QueryAsync(_filter);
+
+            return new GridData<WarehouseListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar almacenes: {ex.Message}", Severity.Error);
+            return new GridData<WarehouseListItemDto>() { TotalItems = 0, Items = Enumerable.Empty<WarehouseListItemDto>() };
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfigureFilter(GridState<WarehouseListItemDto> gridState)
+    {
+        _filter.Page = gridState.Page + 1;
+        _filter.PageSize = gridState.PageSize;
+
+        // Configurar fechas de creación
+        _filter.CreatedFrom = _createdDateRange.Start?.Date;
+        _filter.CreatedTo = _createdDateRange.End?.Date.AddDays(1).AddSeconds(-1);
+
+        // Configurar ordenamiento
+        var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
+        {
+            _filter.SortColumn = sortDefinition.SortBy;
+            _filter.SortDescending = sortDefinition.Descending;
+        }
+        else
+        {
+            // Ordenamiento por defecto
+            _filter.SortColumn = nameof(WarehouseListItemDto.CreatedAt);
+            _filter.SortDescending = true;
+        }
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task RefreshData()
+    {
+        if (_dataGridRef != null)
+        {
+            await _dataGridRef.ReloadServerData();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _openFilter = false;
+        await RefreshData();
+    }
+
+    private async Task OnClearFilter()
+    {
+        _filter = new GetWarehousesQuery();
+        _createdDateRange = new DateRange();
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnCancelFilter()
+    {
+        _filter = _origFilter;
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnSearch(string? text)
+    {
+        _filter.SearchText = text;
+        await RefreshData();
+    }
+
+    private void OnFilterClicked()
+    {
+        // backup original filter
+        _origFilter = new GetWarehousesQuery
+        {
+            Page = _filter.Page,
+            PageSize = _filter.PageSize,
+            SearchText = _filter.SearchText,
+            SortColumn = _filter.SortColumn,
+            SortDescending = _filter.SortDescending,
+            CreatedFrom = _filter.CreatedFrom,
+            CreatedTo = _filter.CreatedTo
+        };
+
+        _openFilter = true;
+    }
+    #endregion
+
+    #region CRUD Operations
+    private async Task AddClick()
+    {
+        var parameters = new DialogParameters();
+        var dialog = await _dialogService.ShowAsync<CreateOrUpdateWarehouseDialog>("Nuevo Almacén", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            await RefreshData();
+        }
+    }
+
+    private async Task EditClick(Guid id)
+    {
+        var parameters = new DialogParameters { { "WarehouseId", id } };
+        var dialog = await _dialogService.ShowAsync<CreateOrUpdateWarehouseDialog>("Editar Almacén", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            await RefreshData();
+        }
+    }
+
+    private async Task DeleteClick(WarehouseListItemDto item)
+    {
+        await _dialogService.ShowConfirmDialog($"¿Desea eliminar el almacén {item.Code} - {item.Name}?", "Eliminar Almacén", async (e) =>
+        {
+            try
+            {
+                var result = await _commandMediator.SendAsync(new DeleteWarehouseCommand
+                {
+                    Id = item.Id
+                });
+                if (result.IsSuccess)
+                {
+                    await RefreshData();
+                    _snackbarService.Add("Almacén eliminado correctamente", Severity.Success);
+                }
+                else
+                {
+                    _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al eliminar el almacén", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Add(ex.Message, Severity.Error);
+            }
+        });
+    }
+    #endregion
+}

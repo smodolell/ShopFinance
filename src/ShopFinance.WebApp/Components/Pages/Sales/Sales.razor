@@ -1,0 +1,435 @@
+﻿@attribute [Route(PageRoute.Sales)]
+@attribute [AccessPoint(AppMenu.MenuSales, "Ventas")]
+@using ShopFinance.Application.Features.Customers.DTOs
+@using ShopFinance.Application.Features.Sales.Commands
+@using ShopFinance.Application.Features.Sales.DTOs
+@using ShopFinance.Application.Features.Sales.Queries
+@using ShopFinance.Domain.Enums
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Ventas" Icon="@AppMenu.MenuSalesIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+<MudDrawer @bind-Open="@_openFilter" Fixed="false" Width="350px" Anchor="Anchor.Right" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Filtros de búsqueda</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing="2" Class="pa-4">
+            <MudItem xs="12">
+                <CustomerAutocomplete T="CustomerSearchDto" Value="_customerSearch" ValueChanged="OnCustomerSelected" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudEnumSelect TEnum="SaleStatus?"
+                               @bind-Value="_filter.Status"
+                               Margin="Margin.Dense"
+                               Label="Estado de la venta"
+                               Clearable="true"
+                               Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudEnumSelect TEnum="PaymentMethod?"
+                               @bind-Value="_filter.PaymentMethod"
+                               Margin="Margin.Dense"
+                               Label="Método de pago"
+                               Clearable="true"
+                               Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudDateRangePicker @bind-DateRange="_saleDateRange"
+                                    Label="Fecha de venta"
+                                    Margin="Margin.Dense"
+                                    Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudDateRangePicker @bind-DateRange="_createdDateRange"
+                                    Label="Fecha de creación"
+                                    Margin="Margin.Dense"
+                                    Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButtonGroup Size="Size.Small" Variant="Variant.Filled">
+                    <MudButton Color="Color.Secondary"
+                               OnClick="OnCancelFilter">
+                        Cancelar
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="OnClearFilter"
+                               Disabled="_loading">
+                        Limpiar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="ApplyFilters"
+                               Disabled="_loading">
+                        Filtrar
+                    </MudButton>
+                </MudButtonGroup>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="_dataGridRef"
+             Loading="_loading"
+             T="SaleListItemDto">
+    <ToolBarContent>
+        <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+            <MudTextField T="string"
+                          ValueChanged="@(s=>OnSearch(s))"
+                          Placeholder="Buscar por número, factura, cliente..."
+                          Adornment="Adornment.Start"
+                          Clearable="true"
+                          Class="flex-grow-0"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small">
+            </MudTextField>
+            <MudIconButton Icon="@Icons.Material.Outlined.FilterAlt"
+                           Class="align-self-end pa-1"
+                           Size="Size.Medium"
+                           OnClick="OnFilterClicked" />
+        </MudStack>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+            <MudTooltip Text="Actualizar">
+                <MudIconButton Icon="@Icons.Material.Outlined.Refresh"
+                               Size="Size.Small"
+                               Color="Color.Info"
+                               OnClick="RefreshData"
+                               Disabled="_loading" />
+            </MudTooltip>
+            <MudTooltip Text="Nueva Venta">
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.PointOfSale"
+                           OnClick="AddClick"
+                           Disabled="_loading">
+                    @AppStrings.New
+                </MudButton>
+            </MudTooltip>
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <HierarchyColumn T="SaleListItemDto" />
+        <PropertyColumn Title="Número" Property="x=>x.SaleNumber" StickyLeft="true" />
+        <PropertyColumn Title="Fecha" Property="x=>x.SaleDate" Format="dd/MM/yyyy" />
+        <PropertyColumn Title="Cliente" Property="x=>x.CustomerName" />
+        <PropertyColumn Title="Estado" Property="x=>x.StatusDisplay">
+            <CellTemplate>
+                <MudChip Size="Size.Small"
+                         Color="@GetStatusColor(context.Item.Status)"
+                         Variant="Variant.Filled">
+                    @context.Item.StatusDisplay
+                </MudChip>
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Title="Pago" Property="x=>x.PaymentMethodDisplay" />
+        <PropertyColumn Title="Factura" Property="x=>x.InvoiceNumber" />
+        <PropertyColumn Title="Total" Property="x=>x.TotalAmount" Format="C" />
+        <PropertyColumn Title="Items" Property="x=>x.ItemsCount" />
+        <TemplateColumn HeaderStyle="width:120px;min-width:120px;" StickyRight="true" Resizable="false" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                    <MudTooltip Text="Detalles">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Visibility"
+                                       Color="Color.Success"
+                                       OnClick="() => DetailClick(context.Item.Id)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Imprimir">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Print"
+                                       Color="Color.Info"
+                                       OnClick="() => PrintClick(context.Item)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Cancelar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Cancel"
+                                       Color="Color.Warning"
+                                       OnClick="() => CancelClick(context.Item)"
+                                       Disabled="_loading || context.Item.Status != SaleStatus.Completed" />
+                    </MudTooltip>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <ChildRowContent>
+        <MudGrid Spacing="2" Class="py-2">
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.CustomerIdentifier" Label="Identificador Cliente"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.OrderNumber" Label="Número de Orden"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@GetProfitDisplay(context.Item)" Label="Ganancia"></ReadOnlyField>
+            </MudItem>
+        </MudGrid>
+    </ChildRowContent>
+    <PagerContent>
+        <MudDataGridPager T="SaleListItemDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="py-4">
+            <MudIcon Icon="@Icons.Material.Outlined.Receipt" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay ventas registradas
+        </MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    </LoadingContent>
+</MudDataGrid>
+
+@code {
+    #region Fields
+    private MudDataGrid<SaleListItemDto> _dataGridRef = null!;
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Ventas", href: null, disabled: true)
+    };
+
+    private GetSalesQuery _filter = new();
+    private GetSalesQuery _origFilter = new();
+    private DateRange _saleDateRange = new();
+    private DateRange _createdDateRange = new();
+    private bool _loading = false;
+    private bool _openFilter;
+    private CustomerSearchDto? _customerSearch;
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _loading = true;
+
+            // Cargar lista de clientes para el filtro
+            await Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<GridData<SaleListItemDto>> GetTableData(GridState<SaleListItemDto> gridState)
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            ConfigureFilter(gridState);
+            var paginatedList = await _queryMediator.QueryAsync(_filter);
+
+            return new GridData<SaleListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar ventas: {ex.Message}", Severity.Error);
+            return new GridData<SaleListItemDto>() { TotalItems = 0, Items = Enumerable.Empty<SaleListItemDto>() };
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfigureFilter(GridState<SaleListItemDto> gridState)
+    {
+        _filter.Page = gridState.Page + 1;
+        _filter.PageSize = gridState.PageSize;
+
+        // Configurar fechas de venta
+        _filter.SaleDateFrom = _saleDateRange.Start?.Date;
+        _filter.SaleDateTo = _saleDateRange.End?.Date.AddDays(1).AddSeconds(-1);
+
+        // Configurar fechas de creación
+        _filter.CreatedFrom = _createdDateRange.Start?.Date;
+        _filter.CreatedTo = _createdDateRange.End?.Date.AddDays(1).AddSeconds(-1);
+
+        // Configurar ordenamiento
+        var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
+        {
+            _filter.SortColumn = sortDefinition.SortBy;
+            _filter.SortDescending = sortDefinition.Descending;
+        }
+        else
+        {
+            // Ordenamiento por defecto
+            _filter.SortColumn = nameof(SaleListItemDto.SaleDate);
+            _filter.SortDescending = true;
+        }
+    }
+
+    private Color GetStatusColor(SaleStatus status)
+    {
+        return status switch
+        {
+            SaleStatus.Completed => Color.Success,
+            SaleStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private string GetProfitDisplay(SaleListItemDto sale)
+    {
+        // Nota: Necesitarías calcular la ganancia en el DTO o aquí
+        // Por ahora mostramos un placeholder
+        return "Por calcular";
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task RefreshData()
+    {
+        if (_dataGridRef != null)
+        {
+            await _dataGridRef.ReloadServerData();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _openFilter = false;
+        await RefreshData();
+    }
+
+    private async Task OnClearFilter()
+    {
+        _filter = new GetSalesQuery();
+        _saleDateRange = new DateRange();
+        _createdDateRange = new DateRange();
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnCancelFilter()
+    {
+        _filter = _origFilter;
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnSearch(string? text)
+    {
+        _filter.SearchText = text;
+        await RefreshData();
+    }
+
+    private void OnFilterClicked()
+    {
+        // backup original filter
+        _origFilter = new GetSalesQuery
+        {
+            Page = _filter.Page,
+            PageSize = _filter.PageSize,
+            SearchText = _filter.SearchText,
+            SortColumn = _filter.SortColumn,
+            SortDescending = _filter.SortDescending,
+            Status = _filter.Status,
+            PaymentMethod = _filter.PaymentMethod,
+            CustomerId = _filter.CustomerId,
+            SaleDateFrom = _filter.SaleDateFrom,
+            SaleDateTo = _filter.SaleDateTo,
+            CreatedFrom = _filter.CreatedFrom,
+            CreatedTo = _filter.CreatedTo
+        };
+
+        _openFilter = true;
+    }
+
+    private void OnCustomerSelected(CustomerSearchDto? customer)
+    {
+        _customerSearch = customer;
+        if (customer != null)
+        {
+            _filter.CustomerId = customer.CustomerId;
+        }
+        else
+        {
+            _filter.CustomerId = null;
+        }
+        StateHasChanged();
+    }
+    #endregion
+
+    #region CRUD Operations
+    private void AddClick()
+    {
+        // Redirigir a creación de orden (las ventas se crean desde órdenes)
+        _navManager.NavigateTo("." + PageRoute.NewOrder);
+    }
+
+    private void DetailClick(Guid id)
+    {
+        _navManager.NavigateTo("." + PageRoute.DetailSale + $"/{id}", true);
+    }
+
+    private void PrintClick(SaleListItemDto item)
+    {
+        _snackbarService.Add($"Imprimiendo venta {item.SaleNumber}...", Severity.Info);
+        // Lógica de impresión aquí
+    }
+
+    private async Task CancelClick(SaleListItemDto item)
+    {
+        await _dialogService.ShowConfirmDialog(
+            $"¿Desea cancelar la venta {item.SaleNumber}? Esta acción no se puede deshacer.",
+            "Cancelar Venta",
+            async (e) =>
+            {
+                try
+                {
+                    var result = await _commandMediator.SendAsync(new CancelSaleCommand
+                    {
+                        SaleId = item.Id
+                    });
+                    if (result.IsSuccess)
+                    {
+                        await _dataGridRef.ReloadServerData();
+                        _snackbarService.Add(result.SuccessMessage ?? "Venta cancelada exitosamente", Severity.Success);
+                    }
+                    else
+                    {
+                        _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al cancelar la venta", MudBlazor.Severity.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+                }
+            });
+    }
+    #endregion
+}

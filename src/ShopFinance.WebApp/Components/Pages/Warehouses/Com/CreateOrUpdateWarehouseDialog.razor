@@ -1,0 +1,183 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Features.Warehouses.Commands
+@using ShopFinance.Application.Features.Warehouses.Queries
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="SaveSubmit" id="warehouseForm">
+            <FluentValidationValidator />
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="4">
+                    <MudEnumSelect TEnum="WarehouseType"
+                                   @bind-Value="_model.Type"
+                                   Margin="Margin.Dense"
+                                   Label="Tipo de almacén"
+                                   Clearable="true"
+                                   Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <MudSwitch @bind-Value="@_model.IsActive"
+                               Label="¿Activo?"
+                               Color="Color.Primary"
+                               Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.Code"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Código"
+                                  Required="true"
+                                  For="@(() => _model.Code)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Nombre"
+                                  Required="true"
+                                  For="@(() => _model.Name)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.Description"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Descripción"
+                                  Lines="3"
+                                  For="@(() => _model.Description)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.Address"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Dirección"
+                                  Lines="2"
+                                  For="@(() => _model.Address)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.Phone"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Teléfono"
+                                  For="@(() => _model.Phone)">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_model.Email"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Email"
+                                  For="@(() => _model.Email)">
+                    </MudTextField>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Medium"
+                   ButtonType="ButtonType.Submit"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   form="warehouseForm"
+                   Disabled="_saving">
+            @(_saving ? "Guardando..." : "Guardar")
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   Size="Size.Medium"
+                   OnClick="Close"
+                   Disabled="_saving">
+            Cancelar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public Guid? WarehouseId { get; set; }
+
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+
+    private CreateOrUpdateWarehouseCommand _model = new();
+    private bool _saving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (WarehouseId.HasValue)
+        {
+            await LoadWarehouseData();
+        }
+    }
+
+    private async Task LoadWarehouseData()
+    {
+        if (!WarehouseId.HasValue) return;
+        try
+        {
+            var result = await _queryMediator.QueryAsync(new GetWarehouseByIdQuery { WarehouseId = WarehouseId.Value });
+            if (result.IsSuccess)
+            {
+                _model = new CreateOrUpdateWarehouseCommand
+                {
+                    Id = result.Value.Id,
+                    Code = result.Value.Code,
+                    Name = result.Value.Name,
+                    Type = result.Value.Type,
+                    IsActive = result.Value.IsActive,
+                    Description = result.Value.Description,
+                    Address = result.Value.Address,
+                    Phone = result.Value.Phone,
+                    Email = result.Value.Email
+                };
+            }
+            else
+            {
+                _snackbarService.Add("Error al cargar los datos del almacén", Severity.Error);
+                Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+            Close();
+        }
+    }
+
+    private async Task SaveSubmit()
+    {
+        _saving = true;
+
+        try
+        {
+            var result = await _commandMediator.SendAsync(_model);
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(
+                    WarehouseId.HasValue ? "Almacén actualizado correctamente" : "Almacén creado correctamente",
+                    Severity.Success
+                );
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al guardar el almacén", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Close() => MudDialog?.Cancel();
+}

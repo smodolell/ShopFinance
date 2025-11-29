@@ -1,0 +1,273 @@
+﻿@attribute [Route(PageRoute.DetailOrder + "/{OrderId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuSales, "Detalle Orden", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Sales.DTOs
+@using ShopFinance.Application.Features.Sales.Queries
+@using ShopFinance.Domain.Entities
+
+<PageHeader Title="Detalle Orden" Icon="@AppMenu.MenuSalesIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+@if (_order != null)
+{
+    <MudGrid Spacing="2">
+        <!-- Información General -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6" md="3">
+                        <ReadOnlyField Label="Número de Orden" Value="@_order.OrderNumber"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <ReadOnlyField Label="Fecha de Orden" Value="@_order.OrderDate.ToString("dd/MM/yyyy")"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <ReadOnlyField Label="Fecha Requerida" Value="@(_order.RequiredDate?.ToString("dd/MM/yyyy") ?? "No especificada")"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption">Estado</MudText>
+                            <MudChip T="string" Color="@GetStatusColor(_order.Status)"
+                                     Variant="Variant.Filled"
+                                     Size="Size.Small">
+                                @_order.Status
+                            </MudChip>
+                            @if (_order.IsOverdue)
+                            {
+                                <MudChip T="string"  Color="Color.Error"
+                                         Variant="Variant.Outlined"
+                                         Size="Size.Small">
+                                    VENCIDA
+                                </MudChip>
+                            }
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Información del Cliente -->
+        <MudItem xs="12" md="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-3">Información del Cliente</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Nombre" Value="@_order.CustomerName"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Identificador" Value="@_order.CustomerIdentifier"></ReadOnlyField>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Información de Totales -->
+        <MudItem xs="12" md="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-3">Resumen de la Orden</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Total Items" Value="@_order.TotalItems"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Monto Total" Value="@string.Format("{0:C}", _order.TotalAmount)"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Creado" Value="@_order.CreatedAt.ToString("dd/MM/yyyy HH:mm")"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Actualizado" Value="@(_order.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "No actualizado")"></ReadOnlyField>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Notas -->
+        @if (!string.IsNullOrEmpty(_order.Notes))
+        {
+            <MudItem xs="12">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.h6" Class="mb-2">Notas</MudText>
+                    <MudText Typo="Typo.body1">@_order.Notes</MudText>
+                </MudPaper>
+            </MudItem>
+        }
+
+        <!-- Items de la Orden -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Detalle de Productos</MudText>
+
+                @if (_order.Items.Any())
+                {
+                    <MudTable Items="@_order.Items" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Código</MudTh>
+                            <MudTh>Producto</MudTh>
+                            <MudTh>Cantidad</MudTh>
+                            <MudTh>Precio Unit.</MudTh>
+                            <MudTh>Subtotal</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Código">@context.Code</MudTd>
+                            <MudTd DataLabel="Producto">@context.ProductName</MudTd>
+                            <MudTd DataLabel="Cantidad" >@context.Quantity</MudTd>
+                            <MudTd DataLabel="Precio Unit." >@string.Format("{0:C}", context.UnitPrice)</MudTd>
+                            <MudTd DataLabel="Subtotal">@string.Format("{0:C}", context.SubTotal)</MudTd>
+                        </RowTemplate>
+                        <FooterContent>
+                            <MudTd colspan="3">
+                                <MudText Typo="Typo.h6">Total</MudText>
+                            </MudTd>
+                            <MudTd  colspan="2">
+                                <MudText Typo="Typo.h6" Color="Color.Success">
+                                    @string.Format("{0:C}", _order.TotalAmount)
+                                </MudText>
+                            </MudTd>
+                        </FooterContent>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudText Align="Align.Center" Class="py-4">
+                        <MudIcon Icon="@Icons.Material.Outlined.ShoppingCart" Size="Size.Large" Color="Color.Primary" />
+                        <br />
+                        No hay productos en esta orden
+                    </MudText>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- Botones de Acción -->
+        <MudItem xs="12">
+            <MudStack Justify="Justify.FlexEnd" Spacing="2" Row="true">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           OnClick="NavigateToOrders"
+                           StartIcon="@Icons.Material.Filled.ArrowBack">
+                    Volver a Órdenes
+                </MudButton>
+                @if (_order.Status == OrderStatus.Draft)
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               OnClick="() => EditOrder(_order.OrderId)"
+                               StartIcon="@Icons.Material.Filled.Edit">
+                        Editar Orden
+                    </MudButton>
+                }
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Info"
+                           OnClick="PrintOrder"
+                           StartIcon="@Icons.Material.Filled.Print">
+                    Imprimir
+                </MudButton>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+}
+else if (_isLoading)
+{
+    <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Style="height: 300px;">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        <MudText Typo="Typo.body2">Cargando orden...</MudText>
+    </MudStack>
+}
+else
+{
+    <MudAlert Severity="Severity.Error" Icon="@Icons.Material.Filled.Error">
+        No se pudo cargar la orden. Verifique que la orden exista.
+    </MudAlert>
+}
+
+@code {
+    #region Parameters and Fields
+    [Parameter]
+    public Guid OrderId { get; set; }
+
+    private OrderViewDto? _order;
+    private bool _isLoading = true;
+    #endregion
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Órdenes", href: PageRoute.Orders),
+        new BreadcrumbItem("Detalle Orden", href: null, disabled: true)
+    };
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrderData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadOrderData()
+    {
+        try
+        {
+            _isLoading = true;
+
+            var result = await _queryMediator.QueryAsync(new GetOrderByIdQuery
+            {
+                OrderId = OrderId
+            });
+
+            if (result.IsSuccess && result.Value != null)
+            {
+                _order = result.Value;
+            }
+            else
+            {
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "No se pudo cargar la orden";
+                _snackbarService.Add(errorMessage, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar la orden: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private Color GetStatusColor(OrderStatus status)
+    {
+        return status switch
+        {
+            OrderStatus.Draft => Color.Default,
+            OrderStatus.Confirmed => Color.Warning,
+            OrderStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+    #endregion
+
+    #region UI Handlers
+    private void NavigateToOrders()
+    {
+        _navManager.NavigateTo("." + PageRoute.Orders);
+    }
+
+    private void EditOrder(Guid orderId)
+    {
+        _navManager.NavigateTo("." + PageRoute.EditOrder + $"/{orderId}");
+    }
+
+    private void PrintOrder()
+    {
+        // Lógica para imprimir la orden
+        _snackbarService.Add("Funcionalidad de impresión en desarrollo", Severity.Info);
+
+        // Ejemplo básico de impresión
+        _jsRuntime.InvokeVoidAsync("window.print");
+    }
+    #endregion
+}

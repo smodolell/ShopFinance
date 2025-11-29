@@ -12,6 +12,7 @@ using ShopFinance.Application.Common.Interfaces;
 using ShopFinance.Domain.Common.Interfaces;
 using ShopFinance.Domain.Entities;
 using ShopFinance.Domain.Repositories;
+using ShopFinance.Domain.Services;
 using ShopFinance.Infrastructure.Authentication;
 using ShopFinance.Infrastructure.Data;
 using ShopFinance.Infrastructure.Data.Initializers;
@@ -75,6 +76,8 @@ public static class DependencyInjection
         services.AddScoped<ISettingRepository, SettingRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+
+        services.AddScoped<IStockService, StockService>();
 
         // 10. Health Checks
         services.AddHealthChecks()

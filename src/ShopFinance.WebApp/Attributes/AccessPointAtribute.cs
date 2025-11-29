@@ -78,8 +78,8 @@ public class AccessPointAttribute : Attribute
                 return AppMenu.MenuAsignacionIcon;
             case AppMenu.MenuProject:
                 return AppMenu.MenuProjectIcon;
-            case AppMenu.MenuApoyo:
-                return AppMenu.MenuApoyoIcon;
+            case AppMenu.MenuSales:
+                return AppMenu.MenuSalesIcon;
             default: return "";
         }
     }

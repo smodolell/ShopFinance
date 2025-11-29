@@ -1,0 +1,633 @@
+﻿@attribute [Route(PageRoute.EditOrder + "/{OrderId:guid?}")]
+@attribute [AccessPoint(AppMenu.MenuSales, "Editar Orden", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Sales.Commands
+@using ShopFinance.Application.Features.Sales.DTOs
+@using ShopFinance.Application.Features.Sales.Queries
+@using ShopFinance.Application.Features.Products.Queries
+@using ShopFinance.Application.Features.Products.DTOs
+@using ShopFinance.Application.Features.Customers.DTOs
+@using ShopFinance.Application.Features.Customers.Queries
+@inject ISelectListService _selectListService
+
+<PageHeader Title="@(OrderId == Guid.Empty ?"Nueva Orden":"Editar Orden")" Icon="@AppMenu.MenuSalesIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+@if (_model != null)
+{
+    <EditForm Model="_model" OnValidSubmit="SaveAsDraft" id="updateOrderForm">
+        <FluentValidationValidator @ref="_fluentValidationValidator" />
+        <FormSection Title="Información del Cliente">
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="4">
+                    <CustomerAutocomplete T="CustomerSearchDto" Value="_customerSearch" ValueChanged="OnCustomerSelected" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="8">
+                    @if (_customerSearch != null)
+                    {
+                        <ReadOnlyField Label="Nombre" Value="@($"{_customerSearch.FirstName} {_customerSearch.LastName}")"></ReadOnlyField>
+                    }
+                </MudItem>
+            </MudGrid>
+        </FormSection>
+
+        <FormSection Title="Información de la Orden">
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudDatePicker @bind-Date="_requiredDate"
+                                   Label="Fecha Requerida"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Disabled="_isSubmitting"
+                                   DateFormat="dd/MM/yyyy"
+                                   HelperText="Fecha de entrega requerida (opcional)">
+                    </MudDatePicker>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="9">
+                    <MudTextField @bind-Value="_model.Notes"
+                                  Lines="1"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Label="Notas"
+                                  Disabled="_isSubmitting"
+                                  HelperText="Notas adicionales para la orden">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <ReadOnlyField Label="Total Items" Value="@_model.Items.Count"></ReadOnlyField>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <ReadOnlyField Label="Total" Value="@string.Format("{0:C}" ,CalculateTotal())"></ReadOnlyField>
+                </MudItem>
+            </MudGrid>
+        </FormSection>
+
+        <FormSection Title="Seleccionar Producto">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <ProductOrderAutocomplete T="ProductForSaleDto" @bind-Value="_productForSale" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField @bind-Value="_quantity"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Label="Cantidad"
+                                     Disabled="@( _isSubmitting || _productForSale==null)"
+                                     Min="1"
+                                     Immediate="true">
+                    </MudNumericField>
+                </MudItem>
+                <MudItem xs="12" md="3" Class="d-flex align-end">
+                    @if (_productForSale != null)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   ButtonType="ButtonType.Button"
+                                   Disabled="_isSubmitting"
+                                   OnClick="AddItem"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)"
+                                   FullWidth="true">
+                            Agregar
+                        </MudButton>
+                    }
+                </MudItem>
+
+                @if (_productForSale != null)
+                {
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-3" Elevation="1">
+                            <MudGrid>
+                                <MudItem xs="12" sm="3">
+                                    <ReadOnlyField Label="Código" Value="@_productForSale.Code"></ReadOnlyField>
+                                </MudItem>
+                                <MudItem xs="12" sm="3">
+                                    <ReadOnlyField Label="Nombre" Value="@_productForSale.Name"></ReadOnlyField>
+                                </MudItem>
+                                <MudItem xs="12" sm="3">
+                                    <ReadOnlyField Label="Precio" Value="@string.Format("{0:C}", _productForSale.SalePrice)"></ReadOnlyField>
+                                </MudItem>
+                                <MudItem xs="12" sm="3">
+                                    <ReadOnlyField Label="Stock" Value="@_productForSale.Stock"></ReadOnlyField>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+        </FormSection>
+
+        <FormSection Title="Detalle de Orden">
+            <MudGrid>
+                <MudItem xs="12">
+                    @if (_model.Items.Any())
+                    {
+                        <!-- Header de la tabla -->
+                        <MudCard Elevation="0" Class="mb-2">
+                            <MudCardContent>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" sm="2">
+                                        <MudText Typo="Typo.caption" Style="font-weight:bold;">Código</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="3">
+                                        <MudText Typo="Typo.caption" Style="font-weight:bold;">Producto</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudText Typo="Typo.caption" Style="font-weight:bold;">Cantidad</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudText Typo="Typo.caption" Style="font-weight:bold;">Precio Unitario</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudText Typo="Typo.caption" Style="font-weight:bold;">Sub Total</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="1">
+                                        <MudText Typo="Typo.caption" Style="font-weight:bold;">Acciones</MudText>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Items de la orden -->
+                        @foreach (var item in _model.Items)
+                        {
+                            var index = _model.Items.IndexOf(item);
+                            <MudCard Elevation="1" Class="mb-1">
+                                <MudCardContent>
+                                    <MudGrid Spacing="2">
+                                        <MudItem xs="12" sm="2">
+                                            <ReadOnlyField Value="@item.Code"></ReadOnlyField>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="3">
+                                            <ReadOnlyField Value="@item.ProductName"></ReadOnlyField>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="2">
+                                            <MudNumericField @bind-Value="item.Quantity"
+                                                             Variant="Variant.Outlined"
+                                                             Margin="Margin.Dense"
+                                                             Disabled="_isSubmitting"
+                                                             Min="1"
+                                                             Max="@item.Stock"
+                                                             Immediate="true">
+                                            </MudNumericField>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="2">
+                                            <MudTextField T="decimal"
+                                                          @bind-Value="item.UnitPrice"
+                                                          Variant="Variant.Outlined"
+                                                          Margin="Margin.Dense"
+                                                          Disabled="_isSubmitting"
+                                                          ReadOnly="true"
+                                                          Immediate="true"
+                                                          Adornment="Adornment.Start"
+                                                          AdornmentIcon="@Icons.Material.Filled.AttachMoney">
+                                            </MudTextField>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="2">
+                                            <MudTextField T="decimal"
+                                                          Value="item.SubTotal"
+                                                          Variant="Variant.Outlined"
+                                                          Margin="Margin.Dense"
+                                                          ReadOnly="true"
+                                                          Immediate="true"
+                                                          Adornment="Adornment.Start"
+                                                          AdornmentIcon="@Icons.Material.Filled.AttachMoney">
+                                            </MudTextField>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="1" Class="d-flex align-center justify-center">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Color="Color.Error"
+                                                           OnClick="() => RemoveItem(index)"
+                                                           Disabled="_isSubmitting"
+                                                           Size="Size.Small">
+                                            </MudIconButton>
+                                        </MudItem>
+                                    </MudGrid>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+
+                        <!-- Total -->
+                        <MudDivider Class="my-3"></MudDivider>
+                        <MudCard Elevation="2" Class="mt-2">
+                            <MudCardContent>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" sm="8">
+                                        <MudText Typo="Typo.h6" Color="Color.Primary">Total de la Orden</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <ReadOnlyField Label="Items" Value="@_model.Items.Count"></ReadOnlyField>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <ReadOnlyField Label="Total" Value="@string.Format("{0:C}", CalculateTotal())"></ReadOnlyField>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                    else
+                    {
+                        <MudText Align="Align.Center" Class="py-4">
+                            <MudIcon Icon="@Icons.Material.Outlined.ShoppingCart" Size="Size.Large" Color="Color.Primary" />
+                            <br />
+                            No hay productos agregados a la orden
+                        </MudText>
+                    }
+                </MudItem>
+            </MudGrid>
+        </FormSection>
+
+        <!-- Botones -->
+        <MudGrid Spacing="2">
+            <MudItem xs="12">
+                <MudStack Justify="Justify.FlexEnd" Spacing="2" Row="true">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               OnClick="NavigateToOrders"
+                               Disabled="_isSubmitting"
+                               StartIcon="@Icons.Material.Filled.ArrowBack">
+                        Cancelar
+                    </MudButton>
+                    @if (OrderId == Guid.Empty)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   OnClick="SaveAsDraft"
+                                   Disabled="_isSubmitting || _model.Items.Count == 0"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)">
+                            @(_isSubmitting ? "Guardando..." : "Guardar Borrador")
+                        </MudButton>
+                    }
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Success"
+                               OnClick="ShowConfirmDialog"
+                               Disabled="_isSubmitting || _model.Items.Count == 0"
+                               StartIcon="@Icons.Material.Filled.CheckCircle"
+                               EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)">
+                        @(_isSubmitting ? "Confirmando..." : "Confirmar Orden")
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+<!-- Diálogo de confirmación -->
+<MudDialog @ref="_confirmDialog" Options="_dialogOptions">
+    <DialogContent>
+        <MudText Typo="Typo.h6">Confirmar Orden</MudText>
+        <MudText Class="my-3">¿Está seguro de confirmar esta orden? Se generará una venta y se descontará el stock.</MudText>
+
+        <MudGrid Spacing="2">
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_invoiceNumber"
+                              Label="Número de Factura"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect @bind-Value="_paymentMethod"
+                           Label="Método de Pago"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense">
+                    <MudSelectItem Value="PaymentMethod.Cash">Efectivo</MudSelectItem>
+                    <MudSelectItem Value="PaymentMethod.CreditCard">Tarjeta Crédito</MudSelectItem>
+                    <MudSelectItem Value="PaymentMethod.DebitCard">Tarjeta Débito</MudSelectItem>
+                    <MudSelectItem Value="PaymentMethod.Transfer">Transferencia</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelConfirm" Color="Color.Default">Cancelar</MudButton>
+        <MudButton OnClick="ConfirmOrder" Color="Color.Success">Confirmar</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [Parameter]
+    public Guid OrderId { get; set; }
+
+    #region Fields
+    private CreateOrUpdateOrderCommand _model = new();
+    private FluentValidationValidator? _fluentValidationValidator;
+    private DateTime? _requiredDate;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+    private int _quantity = 1;
+    private CustomerSearchDto? _customerSearch;
+    private ProductForSaleDto? _productForSale;
+    private MudDialog? _confirmDialog ;
+    private DialogOptions _dialogOptions = new() { CloseButton = true };
+    private string _invoiceNumber = string.Empty;
+    private PaymentMethod _paymentMethod = PaymentMethod.Cash;
+    private bool _isNewOrder => OrderId == Guid.Empty;
+    #endregion
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Órdenes", href: PageRoute.Orders),
+
+    };
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _isLoading = true;
+            if (!_isNewOrder)
+            {
+                await LoadOrderData();
+
+            }
+            _breadcrumbItems.Add(new BreadcrumbItem(_isNewOrder ? "Nueva Orden" : "Editar Orden", href: null, disabled: true));
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadOrderData()
+    {
+        var result = await _queryMediator.QueryAsync(new GetOrderByIdQuery
+        {
+            OrderId = OrderId
+        });
+
+        if (result.IsSuccess && result.Value != null)
+        {
+            var order = result.Value;
+            _model = new CreateOrUpdateOrderCommand
+            {
+                OrderId = order.OrderId,
+                CustomerId = order.CustomerId,
+                Notes = order.Notes,
+                RequiredDate = order.RequiredDate,
+                Items = order.Items.Select(item => new OrderItemDto
+                {
+                    ProductId = item.ProductId,
+                    Code = item.Code,
+                    ProductName = item.ProductName,
+                    UnitPrice = item.UnitPrice,
+                    Quantity = item.Quantity,
+                    Stock = item.Stock
+                }).ToList()
+            };
+
+            _requiredDate = order.RequiredDate;
+
+            if (order.CustomerId.HasValue)
+            {
+                _customerSearch = new CustomerSearchDto
+                {
+                    CustomerId = order.CustomerId.Value,
+                    FirstName = order.CustomerName.Split(' ').FirstOrDefault() ?? string.Empty,
+                    LastName = order.CustomerName.Split(' ').LastOrDefault() ?? string.Empty,
+                    Identifier = order.CustomerIdentifier
+                };
+            }
+
+            _snackbarService.Add("Orden cargada exitosamente", Severity.Success);
+        }
+        else
+        {
+            _snackbarService.Add("No se pudo cargar la orden", Severity.Error);
+        }
+    }
+
+    private void OnCustomerSelected(CustomerSearchDto? customer)
+    {
+        _customerSearch = customer;
+        if (customer != null)
+        {
+            _model.CustomerId = customer.CustomerId;
+        }
+        else
+        {
+            _model.CustomerId = null;
+        }
+        StateHasChanged();
+    }
+
+    private void RemoveItem(int index)
+    {
+        if (index >= 0 && index < _model.Items.Count)
+        {
+            var item = _model.Items[index];
+            _model.Items.RemoveAt(index);
+            _snackbarService.Add($"Producto {item.ProductName} removido de la orden", Severity.Info);
+            StateHasChanged();
+        }
+    }
+
+    private decimal CalculateTotal()
+    {
+        return _model.Items.Sum(item => item.Quantity * item.UnitPrice);
+    }
+    #endregion
+
+    #region Event Handlers
+    private async Task SaveAsDraft()
+    {
+        await ProcessOrderAsync(false);
+    }
+
+    private async Task ProcessOrderAsync(bool confirmOrder = false)
+    {
+        if (_isSubmitting) return;
+
+        if (!await ValidateFormAsync())
+            return;
+
+        // Asignar propiedades de confirmación
+        _model.ConfirmOrder = confirmOrder;
+        _model.InvoiceNumber = string.IsNullOrWhiteSpace(_invoiceNumber) ? null : _invoiceNumber;
+        _model.PaymentMethod = _paymentMethod;
+        _model.RequiredDate = _requiredDate;
+
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                var message = result.SuccessMessage ?? "Operación completada exitosamente";
+                _snackbarService.Add(message, Severity.Success);
+
+                await Task.Delay(500);
+
+                // Redirigir según el resultado
+                if (result.Value.SaleId.HasValue)
+                {
+                    // Si se creó una venta, ir a detalle de venta
+                    _navManager.NavigateTo($"/sales/{result.Value.SaleId}");
+                }
+                else
+                {
+                    // Si solo se guardó, ir a detalle de orden
+                    _navManager.NavigateTo($"/orders/detail/{result.Value.OrderId}");
+                }
+            }
+            else
+            {
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "Error al procesar la orden";
+                _snackbarService.Add(errorMessage, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task<bool> ValidateFormAsync()
+    {
+        if (_fluentValidationValidator != null)
+        {
+            var isValid = await _fluentValidationValidator.ValidateAsync(options =>
+            {
+                options.IncludeAllRuleSets();
+            });
+
+            if (!isValid)
+            {
+                _snackbarService.Add("Por favor, corrige los errores del formulario", Severity.Warning);
+                return false;
+            }
+        }
+
+        // Validar que todos los items tengan producto seleccionado
+        foreach (var item in _model.Items)
+        {
+            if (item.ProductId == Guid.Empty)
+            {
+                _snackbarService.Add("Todos los items deben tener un producto seleccionado", Severity.Warning);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void AddItem()
+    {
+        if (_productForSale == null || _productForSale.Id == Guid.Empty)
+        {
+            _snackbarService.Add("Seleccione un producto válido", Severity.Warning);
+            return;
+        }
+
+        if (_quantity <= 0)
+        {
+            _snackbarService.Add("La cantidad debe ser mayor a 0", Severity.Warning);
+            return;
+        }
+
+        // Verificar si el producto ya existe en los items
+        var existingItem = _model.Items.FirstOrDefault(x => x.ProductId == _productForSale.Id);
+
+        if (existingItem != null)
+        {
+            // Actualizar cantidad del item existente
+            var newQuantity = existingItem.Quantity + _quantity;
+
+            // Validar stock disponible
+            if (newQuantity > _productForSale.Stock)
+            {
+                _snackbarService.Add(
+                    $"Stock insuficiente. Stock disponible: {_productForSale.Stock}, Cantidad solicitada: {newQuantity}",
+                    Severity.Warning);
+                return;
+            }
+
+            existingItem.Quantity = newQuantity;
+            _snackbarService.Add($"Cantidad actualizada para {_productForSale.Name}: {existingItem.Quantity}", Severity.Info);
+        }
+        else
+        {
+            // Validar stock para nuevo item
+            if (_quantity > _productForSale.Stock)
+            {
+                _snackbarService.Add(
+                    $"Stock insuficiente. Stock disponible: {_productForSale.Stock}, Cantidad solicitada: {_quantity}",
+                    Severity.Warning);
+                return;
+            }
+
+            // Agregar nuevo item
+            _model.Items.Add(new OrderItemDto
+            {
+                ProductId = _productForSale.Id,
+                Code = _productForSale.Code,
+                ProductName = _productForSale.Name,
+                UnitPrice = _productForSale.SalePrice,
+                Quantity = _quantity,
+                Stock = _productForSale.Stock
+            });
+
+            _snackbarService.Add($"Producto {_productForSale.Name} agregado a la orden", Severity.Success);
+        }
+
+        // Resetear controles
+        _productForSale = null;
+        _quantity = 1;
+        StateHasChanged();
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task ShowConfirmDialog()
+    {
+        if (_confirmDialog != null)
+        {
+            await _confirmDialog.ShowAsync();
+        }
+
+    }
+
+    private async Task CancelConfirm()
+    {
+        if (_confirmDialog != null)
+        {
+            await _confirmDialog.CloseAsync();
+        }
+    }
+
+    private async Task ConfirmOrder()
+    {
+        if (_confirmDialog != null)
+        {
+            await _confirmDialog.CloseAsync();
+        }
+
+        await ProcessOrderAsync(true);
+    }
+
+    private void NavigateToOrders()
+    {
+        _navManager.NavigateTo("." + PageRoute.Orders);
+    }
+    #endregion
+}

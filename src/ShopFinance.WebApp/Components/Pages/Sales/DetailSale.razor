@@ -1,0 +1,293 @@
+﻿@attribute [Route(PageRoute.DetailSale + "/{SaleId:guid}")]
+@attribute [AccessPoint(AppMenu.MenuSales, "Detalle Venta", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Sales.DTOs
+@using ShopFinance.Application.Features.Sales.Queries
+@using ShopFinance.Domain.Entities
+
+<PageHeader Title="Detalle Venta" Icon="@AppMenu.MenuSalesIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+@if (_sale != null)
+{
+    <MudGrid Spacing="2">
+        <!-- Información General -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6" md="3">
+                        <ReadOnlyField Label="Número de Venta" Value="@_sale.SaleNumber"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <ReadOnlyField Label="Fecha de Venta" Value="@_sale.SaleDate.ToString("dd/MM/yyyy HH:mm")"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <ReadOnlyField Label="Número de Orden" Value="@_sale.OrderNumber"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption">Estado</MudText>
+                            <MudChip T="string" Color="@GetStatusColor(_sale.Status)"
+                                     Variant="Variant.Filled"
+                                     Size="Size.Small">
+                                @_sale.StatusDisplay
+                            </MudChip>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Información del Cliente y Pago -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-3">Información del Cliente</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Nombre" Value="@_sale.CustomerName"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Identificador" Value="@_sale.CustomerIdentifier"></ReadOnlyField>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-3">Información de Pago</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Método de Pago" Value="@_sale.PaymentMethodDisplay"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="N° Factura" Value="@(_sale.InvoiceNumber ?? "No especificada")"></ReadOnlyField>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Resumen de la Venta -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-3">Resumen de la Venta</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4">
+                        <ReadOnlyField Label="Total Items" Value="@_sale.TotalItems"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <ReadOnlyField Label="Monto Total" Value="@string.Format("{0:C}", _sale.TotalAmount)"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <ReadOnlyField Label="Ganancia Total" Value="@string.Format("{0:C}", _sale.TotalProfit)"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Creado" Value="@_sale.CreatedAt.ToString("dd/MM/yyyy HH:mm")"></ReadOnlyField>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <ReadOnlyField Label="Actualizado" Value="@(_sale.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "No actualizado")"></ReadOnlyField>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Items de la Venta -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Detalle de Productos Vendidos</MudText>
+
+                @if (_sale.Items.Any())
+                {
+                    <MudTable Items="@_sale.Items" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Código</MudTh>
+                            <MudTh>Producto</MudTh>
+                            <MudTh>Categoría</MudTh>
+                            <MudTh>Cantidad</MudTh>
+                            <MudTh>Costo</MudTh>
+                            <MudTh>Precio</MudTh>
+                            <MudTh>Subtotal</MudTh>
+                            <MudTh>Ganancia</MudTh>
+                            <MudTh>Margen %</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Código">@context.Code</MudTd>
+                            <MudTd DataLabel="Producto">@context.ProductName</MudTd>
+                            <MudTd DataLabel="Categoría">@context.CategoryName</MudTd>
+                            <MudTd DataLabel="Cantidad">@context.Quantity</MudTd>
+                            <MudTd DataLabel="Costo">@string.Format("{0:C}", context.CostPrice)</MudTd>
+                            <MudTd DataLabel="Precio">@string.Format("{0:C}", context.UnitPrice)</MudTd>
+                            <MudTd DataLabel="Subtotal">@string.Format("{0:C}", context.SubTotal)</MudTd>
+                            <MudTd DataLabel="Ganancia">
+                                <MudText Color="@(context.Profit >= 0 ? Color.Success : Color.Error)">
+                                    @string.Format("{0:C}", context.Profit)
+                                </MudText>
+                            </MudTd>
+                            <MudTd DataLabel="Margen %">
+                                <MudText Color="@(context.ProfitMargin >= 0 ? Color.Success : Color.Error)">
+                                    @string.Format("{0:F1}%", context.ProfitMargin)
+                                </MudText>
+                            </MudTd>
+                        </RowTemplate>
+                        <FooterContent>
+                            <MudTd colspan="6">
+                                <MudText Typo="Typo.h6">Totales</MudText>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.h6">@string.Format("{0:C}", _sale.TotalAmount)</MudText>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.h6" Color="Color.Success">
+                                    @string.Format("{0:C}", _sale.TotalProfit)
+                                </MudText>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.h6" Color="Color.Success">
+                                    @string.Format("{0:F1}%", _sale.TotalAmount > 0 ? (_sale.TotalProfit / _sale.TotalAmount) * 100 : 0)
+                                </MudText>
+                            </MudTd>
+                        </FooterContent>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudText Align="Align.Center" Class="py-4">
+                        <MudIcon Icon="@Icons.Material.Outlined.ShoppingCart" Size="Size.Large" Color="Color.Primary" />
+                        <br />
+                        No hay productos en esta venta
+                    </MudText>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- Botones de Acción -->
+        <MudItem xs="12">
+            <MudStack Justify="Justify.FlexEnd" Spacing="2" Row="true">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           OnClick="NavigateToSales"
+                           StartIcon="@Icons.Material.Filled.ArrowBack">
+                    Volver a Ventas
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           OnClick="PrintSale"
+                           StartIcon="@Icons.Material.Filled.Print">
+                    Imprimir Comprobante
+                </MudButton>
+                @if (_sale.Status == SaleStatus.Completed)
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Warning"
+                               OnClick="ShowCancelDialog"
+                               StartIcon="@Icons.Material.Filled.Cancel">
+                        Cancelar Venta
+                    </MudButton>
+                }
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+}
+else if (_isLoading)
+{
+    <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Style="height: 300px;">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        <MudText Typo="Typo.body2">Cargando venta...</MudText>
+    </MudStack>
+}
+else
+{
+    <MudAlert Severity="Severity.Error" Icon="@Icons.Material.Filled.Error">
+        No se pudo cargar la venta. Verifique que la venta exista.
+    </MudAlert>
+}
+
+@code {
+    #region Parameters and Fields
+    [Parameter]
+    public Guid SaleId { get; set; }
+
+    private SaleDetailDto? _sale;
+    private bool _isLoading = true;
+    #endregion
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Ventas", href: PageRoute.Sales),
+        new BreadcrumbItem("Detalle Venta", href: null, disabled: true)
+    };
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSaleData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadSaleData()
+    {
+        try
+        {
+            _isLoading = true;
+
+            var result = await _queryMediator.QueryAsync(new GetSaleByIdQuery
+            {
+                SaleId = SaleId
+            });
+
+            if (result.IsSuccess && result.Value != null)
+            {
+                _sale = result.Value;
+            }
+            else
+            {
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "No se pudo cargar la venta";
+                _snackbarService.Add(errorMessage, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar la venta: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private Color GetStatusColor(SaleStatus status)
+    {
+        return status switch
+        {
+            SaleStatus.Completed => Color.Success,
+            SaleStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+    #endregion
+
+    #region UI Handlers
+    private void NavigateToSales()
+    {
+        _navManager.NavigateTo("." + PageRoute.Sales);
+    }
+
+    private void PrintSale()
+    {
+        // Lógica para imprimir la venta
+        _snackbarService.Add("Funcionalidad de impresión en desarrollo", Severity.Info);
+        _jsRuntime.InvokeVoidAsync("window.print");
+    }
+
+    private void ShowCancelDialog()
+    {
+        // Lógica para mostrar diálogo de cancelación
+        _snackbarService.Add("Funcionalidad de cancelación en desarrollo", Severity.Info);
+    }
+    #endregion
+}

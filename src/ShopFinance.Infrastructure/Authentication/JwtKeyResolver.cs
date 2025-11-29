@@ -79,6 +79,7 @@ public class ApiAuthorizeHandler : AuthorizationHandler<ApiAuthorizeRequirement>
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, ApiAuthorizeRequirement requirement)
     {
         context.Succeed(requirement);
+        await Task.CompletedTask;
     }
 }
 public class ApiAuthorizeAttribute : AuthorizeAttribute

@@ -16,5 +16,12 @@ public class Product : BaseEntityAudit<Guid>
     public ProductState State { get; set; }
 
     public virtual Category Category { get; set; } = null!;
-
+ 
+    public virtual ICollection<WarehouseProduct> WarehouseProducts { get; set; } = new List<WarehouseProduct>();
+    public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
+    public virtual ICollection<StockCountItem> StockCountItems { get; set; } = new List<StockCountItem>();
+    public virtual ICollection<StockTransferItem> StockTransferItems { get; set; } = new List<StockTransferItem>();
+    public virtual ICollection<StockAlert> StockAlerts { get; set; } = new List<StockAlert>();
+    public virtual ICollection<SaleItem> SaleItems { get; set; } = new List<SaleItem>();
+    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

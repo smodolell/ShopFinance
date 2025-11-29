@@ -12,6 +12,13 @@ public interface IUnitOfWork : IDisposable
     IUserRepository Users { get; }
     IRoleRepository Roles { get; }
     ISettingRepository Settings { get; }
+    IOrderRepository Orders { get; }
+    IOrderItemRepository OrderItems { get; }
+    ISaleRepository Sales { get; }
+    IStockMovementRepository StockMovements { get; }
+    IWarehouseProductRepository WarehouseProducts { get; }
+    IStockTransferRepository StockTransfers{ get; }
+    IWarehouseRepository Warehouses { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync();

@@ -318,6 +318,88 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.ToTable("Movements");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Order", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RequiredDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrderDate");
+
+                    b.HasIndex("OrderNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Orders", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.OrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("OrderItems", (string)null);
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -511,6 +593,103 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.ToTable("Roles", (string)null);
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Sale", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InvoiceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("SaleDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SaleNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("WarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceNumber")
+                        .IsUnique()
+                        .HasFilter("[InvoiceNumber] IS NOT NULL");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("SaleDate");
+
+                    b.HasIndex("SaleNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("Sales", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.SaleItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("CostPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SaleId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SaleId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("SaleItems", (string)null);
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Setting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -541,6 +720,307 @@ namespace ShopFinance.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Settings");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockAlert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AlertDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AlertType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CurrentStock")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Threshold")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlertDate");
+
+                    b.HasIndex("AlertType");
+
+                    b.HasIndex("ProductId", "AlertType");
+
+                    b.HasIndex("WarehouseId", "AlertDate")
+                        .HasFilter("[AlertType] IN (0,1,2)");
+
+                    b.HasIndex("WarehouseId", "AlertType");
+
+                    b.ToTable("StockAlerts", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockCount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CountDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CountNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountDate");
+
+                    b.HasIndex("CountNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("WarehouseId", "Status");
+
+                    b.ToTable("StockCounts", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockCountItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PhysicalQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("StockCountId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SystemQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StockCountId", "ProductId")
+                        .IsUnique();
+
+                    b.HasIndex("StockCountId", "SystemQuantity", "PhysicalQuantity");
+
+                    b.ToTable("StockCountItems", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("MovementDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MovementType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NewStock")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PreviousStock")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("ReferenceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MovementDate");
+
+                    b.HasIndex("MovementType");
+
+                    b.HasIndex("Source");
+
+                    b.HasIndex("ProductId", "MovementDate");
+
+                    b.HasIndex("ReferenceId", "Source")
+                        .HasFilter("[ReferenceId] IS NOT NULL");
+
+                    b.HasIndex("WarehouseId", "MovementDate");
+
+                    b.ToTable("StockMovements", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FromWarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("ToWarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("TransferDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TransferNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromWarehouseId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("ToWarehouseId");
+
+                    b.HasIndex("TransferDate");
+
+                    b.HasIndex("TransferNumber")
+                        .IsUnique();
+
+                    b.ToTable("StockTransfers", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockTransferItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QuantityReceived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("QuantitySent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("StockTransferId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StockTransferId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("StockTransferItems", (string)null);
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.User", b =>
@@ -636,6 +1116,169 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Warehouse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("Type");
+
+                    b.ToTable("Warehouses", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.WarehouseProduct", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StockMax")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("StockMin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("StockQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Location")
+                        .HasFilter("[Location] IS NOT NULL");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StockQuantity");
+
+                    b.HasIndex("WarehouseId", "ProductId")
+                        .IsUnique();
+
+                    b.HasIndex("WarehouseId", "StockQuantity");
+
+                    b.ToTable("WarehouseProducts", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.WarehouseSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LowStockProducts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("OutOfStockProducts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<decimal>("TotalInventoryValue")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int>("TotalMovementsToday")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("TotalProducts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WarehouseId")
+                        .IsUnique();
+
+                    b.ToTable("WarehouseSummaries", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("ShopFinance.Domain.Entities.Role", null)
@@ -728,6 +1371,33 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Navigation("Credit");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Order", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.OrderItem", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Order", "Order")
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("ShopFinance.Domain.Entities.Product", "Product")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Payment", b =>
                 {
                     b.HasOne("ShopFinance.Domain.Entities.Credit", "Credit")
@@ -773,11 +1443,171 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Sale", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Order", "Order")
+                        .WithOne("Sale")
+                        .HasForeignKey("ShopFinance.Domain.Entities.Sale", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.SaleItem", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Product", "Product")
+                        .WithMany("SaleItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ShopFinance.Domain.Entities.Sale", "Sale")
+                        .WithMany("Items")
+                        .HasForeignKey("SaleId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Sale");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockAlert", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Product", "Product")
+                        .WithMany("StockAlerts")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany("StockAlerts")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockCount", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany("StockCounts")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockCountItem", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Product", "Product")
+                        .WithMany("StockCountItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ShopFinance.Domain.Entities.StockCount", "StockCount")
+                        .WithMany("Items")
+                        .HasForeignKey("StockCountId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Product");
+
+                    b.Navigation("StockCount");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockMovement", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Product", "Product")
+                        .WithMany("StockMovements")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany("StockMovements")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockTransfer", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", "FromWarehouse")
+                        .WithMany()
+                        .HasForeignKey("FromWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", "ToWarehouse")
+                        .WithMany()
+                        .HasForeignKey("ToWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("FromWarehouse");
+
+                    b.Navigation("ToWarehouse");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockTransferItem", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Product", "Product")
+                        .WithMany("StockTransferItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ShopFinance.Domain.Entities.StockTransfer", "StockTransfer")
+                        .WithMany("Items")
+                        .HasForeignKey("StockTransferId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Product");
+
+                    b.Navigation("StockTransfer");
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.User", b =>
                 {
                     b.HasOne("ShopFinance.Domain.Entities.Role", null)
                         .WithMany("Users")
                         .HasForeignKey("RoleId");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.WarehouseProduct", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Product", "Product")
+                        .WithMany("WarehouseProducts")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany("Products")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.WarehouseSummary", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Warehouse", null)
+                        .WithOne()
+                        .HasForeignKey("ShopFinance.Domain.Entities.WarehouseSummary", "WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.AmortizationScheduleEntry", b =>
@@ -802,14 +1632,64 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Navigation("Credits");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Order", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("Sale");
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Payment", b =>
                 {
                     b.Navigation("PaymentApplications");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Product", b =>
+                {
+                    b.Navigation("OrderItems");
+
+                    b.Navigation("SaleItems");
+
+                    b.Navigation("StockAlerts");
+
+                    b.Navigation("StockCountItems");
+
+                    b.Navigation("StockMovements");
+
+                    b.Navigation("StockTransferItems");
+
+                    b.Navigation("WarehouseProducts");
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Sale", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockCount", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.StockTransfer", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Warehouse", b =>
+                {
+                    b.Navigation("Products");
+
+                    b.Navigation("StockAlerts");
+
+                    b.Navigation("StockCounts");
+
+                    b.Navigation("StockMovements");
                 });
 #pragma warning restore 612, 618
         }

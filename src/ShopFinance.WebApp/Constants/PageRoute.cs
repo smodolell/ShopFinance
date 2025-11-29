@@ -26,9 +26,15 @@ internal static class PageRoute
     public const string EditCustomer = Prefix + "edit_customer";
     public const string DetailCustomer = Prefix + "detail_customer";
 
+    public const string Orders = Prefix + "orders";
+    public const string NewOrder = Prefix + "new_order";
+    public const string EditOrder = Prefix + "edit_order";
+    public const string DetailOrder = Prefix + "detail_order";
 
+    public const string Sales = Prefix + "sales";
+    public const string DetailSale = Prefix + "detail_sale";
 
-
+   public const string Warehouses = Prefix + "warehouses";
 
     public const string Settings = Prefix + "settings";
     public const string NewTodo = Prefix + "new_todo";

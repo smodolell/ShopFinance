@@ -9,3 +9,14 @@ public class CustomerViewDto
     public DateTime Birthdate { get; set; }
 
 }
+
+public class CustomerSearchDto
+{
+    public Guid CustomerId { get; set; }
+    public string Identifier { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public DateTime Birthdate { get; set; }
+
+}
+

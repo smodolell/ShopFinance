@@ -23,6 +23,19 @@ public class UnitOfWork : IUnitOfWork
 
     public ISettingRepository Settings { get; }
 
+    public IOrderRepository Orders { get; }
+
+    public ISaleRepository Sales { get; }
+
+    public IOrderItemRepository OrderItems { get; }
+
+    public IStockMovementRepository StockMovements { get; }
+
+    public IWarehouseProductRepository WarehouseProducts { get; }
+
+    public IStockTransferRepository StockTransfers { get; }
+
+    public IWarehouseRepository Warehouses { get; }
     public UnitOfWork(ApplicationDbContext context, UserManager<User> userManager, RoleManager<Role> roleManager, SignInManager<User> signInManager)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -34,6 +47,13 @@ public class UnitOfWork : IUnitOfWork
         Settings = new SettingRepository(_context);
         Roles = new RoleRepository(context,roleManager);
         Users = new UserRepository(context, userManager,signInManager);
+        Orders = new OrderRepository(context);
+        Sales = new SaleRepository(context);
+        OrderItems = new OrderItemRepository(context);
+        StockMovements = new StockMovementRepository(context);
+        WarehouseProducts = new WarehouseProductRepository(context);
+        StockTransfers = new StockTransferRepository(context);
+        Warehouses = new WarehouseRepository(context);
     }
 
     public async Task BeginTransactionAsync()

@@ -1,0 +1,402 @@
+﻿@attribute [Route(PageRoute.Orders)]
+@attribute [AccessPoint(AppMenu.MenuSales, "Órdenes")]
+@using ShopFinance.Application.Features.Sales.Commands
+@using ShopFinance.Application.Features.Sales.DTOs
+@using ShopFinance.Application.Features.Sales.Queries
+@using ShopFinance.Domain.Entities
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Órdenes" Icon="@AppMenu.MenuSalesIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+<MudDrawer @bind-Open="@_openFilter" Fixed="false" Width="350px" Anchor="Anchor.Right" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Filtros de búsqueda</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing="2" Class="pa-4">
+
+            <MudItem xs="12">
+                <MudEnumSelect TEnum="OrderStatus?"
+                               @bind-Value="_filter.Status"
+                               Margin="Margin.Dense"
+                               Label="Estado de la orden"
+                               Clearable="true"
+                               Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudDateRangePicker @bind-DateRange="_orderDateRange"
+                                    Label="Fecha de orden"
+                                    Margin="Margin.Dense"
+                                    Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudDateRangePicker @bind-DateRange="_requiredDateRange"
+                                    Label="Fecha requerida"
+                                    Margin="Margin.Dense"
+                                    Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButtonGroup Size="Size.Small" Variant="Variant.Filled">
+                    <MudButton Color="Color.Secondary"
+                               OnClick="OnCancelFilter">
+                        Cancelar
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="OnClearFilter"
+                               Disabled="_loading">
+                        Limpiar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="ApplyFilters"
+                               Disabled="_loading">
+                        Filtrar
+                    </MudButton>
+                </MudButtonGroup>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="_dataGridRef"
+             Loading="_loading"
+             T="OrderListItemDto">
+    <ToolBarContent>
+        <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+            <MudTextField T="string"
+                          ValueChanged="@(s=>OnSearch(s))"
+                          Placeholder="Buscar por número, cliente..."
+                          Adornment="Adornment.Start"
+                          Clearable="true"
+                          Class="flex-grow-0"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small">
+            </MudTextField>
+            <MudIconButton Icon="@Icons.Material.Outlined.FilterAlt"
+                           Class="align-self-end pa-1"
+                           Size="Size.Medium"
+                           OnClick="OnFilterClicked" />
+        </MudStack>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+            <MudTooltip Text="Actualizar">
+                <MudIconButton Icon="@Icons.Material.Outlined.Refresh"
+                               Size="Size.Small"
+                               Color="Color.Info"
+                               OnClick="RefreshData"
+                               Disabled="_loading" />
+            </MudTooltip>
+            <MudTooltip Text="Nueva Orden">
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.Add"
+                           OnClick="AddClick"
+                           Disabled="_loading">
+                    @AppStrings.New
+                </MudButton>
+            </MudTooltip>
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <HierarchyColumn T="OrderListItemDto" />
+        <PropertyColumn Title="Número" Property="x=>x.OrderNumber" StickyLeft="true" />
+        <PropertyColumn Title="Fecha" Property="x=>x.OrderDate" Format="dd/MM/yyyy" />
+        <PropertyColumn Title="Cliente" Property="x=>x.CustomerName" />
+        <PropertyColumn Title="Estado" Property="x=>x.StatusDisplay">
+            <CellTemplate>
+                <MudChip Size="Size.Small"
+                         Color="@GetStatusColor(context.Item.Status)"
+                         Variant="Variant.Filled">
+                    @context.Item.StatusDisplay
+                </MudChip>
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Title="Total" Property="x=>x.TotalAmount" Format="C" />
+        <PropertyColumn Title="Items" Property="x=>x.ItemsCount" />
+        <TemplateColumn HeaderStyle="width:160px;min-width:160px;" StickyRight="true" Resizable="false" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                    <MudTooltip Text="Detalles">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Visibility"
+                                       Color="Color.Success"
+                                       OnClick="() => DetailClick(context.Item.Id)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Edit"
+                                       Color="Color.Primary"
+                                       OnClick="() => EditClick(context.Item.Id)"
+                                       Disabled="_loading || context.Item.Status != OrderStatus.Draft" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Delete"
+                                       Color="Color.Error"
+                                       OnClick="() => DeleteClick(context.Item)"
+                                       Disabled="_loading || context.Item.Status != OrderStatus.Draft" />
+                    </MudTooltip>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <ChildRowContent>
+        <MudGrid Spacing="2" Class="py-2">
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.CustomerIdentifier" Label="Identificador Cliente"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.RequiredDate?.ToString("dd/MM/yyyy")" Label="Fecha Requerida"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudChip Size="Size.Small"
+                         Color="@(context.Item.IsOverdue ? Color.Error : Color.Default)"
+                         Variant="Variant.Outlined">
+                    @(context.Item.IsOverdue ? "VENCIDA" : "AL DÍA")
+                </MudChip>
+            </MudItem>
+        </MudGrid>
+    </ChildRowContent>
+    <PagerContent>
+        <MudDataGridPager T="OrderListItemDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="py-4">
+            <MudIcon Icon="@Icons.Material.Outlined.ShoppingCart" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay órdenes registradas
+        </MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    </LoadingContent>
+</MudDataGrid>
+
+@code {
+    #region Fields
+    private MudDataGrid<OrderListItemDto> _dataGridRef = null!;
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Órdenes", href: null, disabled: true)
+    };
+
+    private GetOrdersQuery _filter = new();
+    private GetOrdersQuery _origFilter = new();
+    private DateRange _orderDateRange = new();
+    private DateRange _requiredDateRange = new();
+    private bool _loading = false;
+    private bool _openFilter;
+    //private List<CustomerListItemDto>? _customers;
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _loading = true;
+
+            //// Cargar lista de clientes para el filtro
+            //var customersQuery = new GetCustomersQuery { PageSize = 100 };
+            //var customersResult = await _queryMediator.QueryAsync(customersQuery);
+            //_customers = customersResult.Value?.ToList();
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<GridData<OrderListItemDto>> GetTableData(GridState<OrderListItemDto> gridState)
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            ConfigureFilter(gridState);
+            var paginatedList = await _queryMediator.QueryAsync(_filter);
+
+            return new GridData<OrderListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar órdenes: {ex.Message}", Severity.Error);
+            return new GridData<OrderListItemDto>() { TotalItems = 0, Items = Enumerable.Empty<OrderListItemDto>() };
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfigureFilter(GridState<OrderListItemDto> gridState)
+    {
+        _filter.Page = gridState.Page + 1;
+        _filter.PageSize = gridState.PageSize;
+
+        // Configurar fechas de orden
+        _filter.OrderDateFrom = _orderDateRange.Start?.Date;
+        _filter.OrderDateTo = _orderDateRange.End?.Date.AddDays(1).AddSeconds(-1);
+
+        // Configurar fechas requeridas
+        _filter.RequiredDateFrom = _requiredDateRange.Start?.Date;
+        _filter.RequiredDateTo = _requiredDateRange.End?.Date.AddDays(1).AddSeconds(-1);
+
+        // Configurar ordenamiento
+        var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
+        {
+            _filter.SortColumn = sortDefinition.SortBy;
+            _filter.SortDescending = sortDefinition.Descending;
+        }
+        else
+        {
+            // Ordenamiento por defecto
+            _filter.SortColumn = nameof(OrderListItemDto.OrderDate);
+            _filter.SortDescending = true;
+        }
+    }
+
+    private Color GetStatusColor(OrderStatus status)
+    {
+        return status switch
+        {
+            OrderStatus.Draft => Color.Default,
+            OrderStatus.Confirmed => Color.Warning,
+            OrderStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task RefreshData()
+    {
+        if (_dataGridRef != null)
+        {
+            await _dataGridRef.ReloadServerData();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _openFilter = false;
+        await RefreshData();
+    }
+
+    private async Task OnClearFilter()
+    {
+        _filter = new GetOrdersQuery();
+        _orderDateRange = new DateRange();
+        _requiredDateRange = new DateRange();
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnCancelFilter()
+    {
+        _filter = _origFilter;
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnSearch(string? text)
+    {
+        _filter.SearchText = text;
+        await RefreshData();
+    }
+
+    private void OnFilterClicked()
+    {
+        // backup original filter
+        _origFilter = new GetOrdersQuery
+        {
+            Page = _filter.Page,
+            PageSize = _filter.PageSize,
+            SearchText = _filter.SearchText,
+            SortColumn = _filter.SortColumn,
+            SortDescending = _filter.SortDescending,
+            Status = _filter.Status,
+            CustomerId = _filter.CustomerId,
+            OrderDateFrom = _filter.OrderDateFrom,
+            OrderDateTo = _filter.OrderDateTo,
+            RequiredDateFrom = _filter.RequiredDateFrom,
+            RequiredDateTo = _filter.RequiredDateTo
+        };
+
+        _openFilter = true;
+    }
+    #endregion
+
+    #region CRUD Operations
+    private void AddClick()
+    {
+        _navManager.NavigateTo("." + PageRoute.EditOrder);
+    }
+
+    private void EditClick(Guid id)
+    {
+        _navManager.NavigateTo("." + PageRoute.EditOrder + $"/{id}", true);
+    }
+
+    private void DetailClick(Guid id)
+    {
+        _navManager.NavigateTo("." + PageRoute.DetailOrder + $"/{id}", true);
+    }
+
+    private async Task DeleteClick(OrderListItemDto item)
+    {
+        await _dialogService.ShowConfirmDialog($"¿Desea eliminar la orden {item.OrderNumber}?", "Eliminar Orden", async (e) =>
+        {
+            try
+            {
+                var result = await _commandMediator.SendAsync(new DeleteOrderCommand
+                {
+                    OrderId = item.Id
+                });
+                if (result.IsSuccess)
+                {
+                    await _dataGridRef.ReloadServerData();
+                    _snackbarService.Add(result.SuccessMessage ?? "Orden eliminada exitosamente", Severity.Success);
+                }
+                else
+                {
+                    _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al eliminar la orden", MudBlazor.Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        });
+    }
+    #endregion
+}

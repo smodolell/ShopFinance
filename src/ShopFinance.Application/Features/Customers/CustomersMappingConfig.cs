@@ -9,6 +9,9 @@ public class CustomersMappingConfig : IRegister
     {
         config.NewConfig<Customer, CustomerListItemDto>();
         config.NewConfig<Customer, CustomerViewDto>()
-            .Map(o => o.CustomerId, d => d.Id); ;
+            .Map(o => o.CustomerId, d => d.Id);
+
+        config.NewConfig<Customer, CustomerSearchDto>()
+        .Map(o => o.CustomerId, d => d.Id);
     }
 }

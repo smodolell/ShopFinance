@@ -36,6 +36,11 @@ public static class AppMenu
     public const string MenuCustomers = "Clientes";
     public const string MenuCustomersIcon = Icons.Material.Filled.PeopleOutline;
 
+
+    public const string MenuSales = "Sales";
+    public const string MenuSalesIcon = Icons.Material.Filled.PointOfSale;
+
+
     public const string MenuAlerta = "Alertas";
     public const string MenuReporte = "Reportes";
     public const string MenuReporteIcon = Icons.Material.Filled.BarChart;
@@ -65,10 +70,6 @@ public static class AppMenu
 
     public const string MenuProject = "Proyectos";
     public const string MenuProjectIcon = Icons.Material.Filled.AppSettingsAlt;
-
-
-    public const string MenuApoyo = "Apoyo";
-    public const string MenuApoyoIcon = Icons.Material.Filled.SupportAgent;
 
 
 

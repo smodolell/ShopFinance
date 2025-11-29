@@ -62,12 +62,42 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.HasIndex(p => p.CodeSku)
             .IsUnique();
 
+
+
         // Indexes
         builder.HasIndex(p => p.Name);
         builder.HasIndex(p => p.CategoryId);
         builder.HasIndex(p => p.State);
 
-        // Query filters (opcional)
-        // builder.HasQueryFilter(p => p.State == ProductState.Active); // si quieres filtrar productos activos
+   
+
+        // Relaciones (todas opcionales por los query filters)
+        builder.HasMany(x => x.WarehouseProducts)
+            .WithOne(x => x.Product)
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(x => x.StockMovements)
+            .WithOne(x => x.Product)
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(x => x.StockCountItems)
+            .WithOne(x => x.Product)
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(x => x.StockAlerts)
+            .WithOne(x => x.Product)
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Si tienes SaleItems
+        builder.HasMany(x => x.SaleItems)
+            .WithOne(x => x.Product)
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+
     }
 }
