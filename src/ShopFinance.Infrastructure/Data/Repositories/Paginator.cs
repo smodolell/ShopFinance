@@ -33,4 +33,16 @@ public sealed class Paginator : IPaginator
         var pagedResult = new PagedResult<List<TDestination>>(pageInfo, items);
         return pagedResult;
     }
+
+    public PagedResult<List<T>> CreatePagedResult<T>(
+        List<T> items,
+        int pageNumber,
+        int pageSize,
+        long totalCount)
+    where T : class
+    {
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var pageInfo = new PagedInfo(pageNumber, pageSize, totalPages, totalCount);
+        return new PagedResult<List<T>>(pageInfo, items);
+    }
 }

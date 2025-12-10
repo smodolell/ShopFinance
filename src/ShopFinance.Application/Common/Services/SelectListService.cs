@@ -28,12 +28,33 @@ class SelectListService : ISelectListService
 
 
 
+    public async Task<List<SelectListItemDto>> Warehouses()
+    {
+        var categories = await _unitOfWork.Warehouses.GetListAsync();
 
+        return categories.Select(s => new SelectListItemDto
+        {
+            Text = s.Name,
+            Value = s.Id.ToString()
+        }).ToList();
+    }
 
     public Task<List<SelectListItemDto>> ProductState()
     {
         return GetSelectListsByEnum<ProductState>();
     }
+
+    public async Task<List<SelectListItemDto>> Phases()
+    {
+        var data = await _unitOfWork.Phases.GetListAsync();
+
+        return data.Select(s => new SelectListItemDto
+        {
+            Text = s.PhaseName,
+            Value = s.Id.ToString()
+        }).ToList();
+    }
+
     #region Private
 
     private Task<List<SelectListItemDto>> GetSelectListsByEnum<T>() where T : Enum
@@ -59,6 +80,9 @@ class SelectListService : ISelectListService
 
         return attribute?.Name ?? enumValue.ToString();
     }
+
+  
+
 
 
 

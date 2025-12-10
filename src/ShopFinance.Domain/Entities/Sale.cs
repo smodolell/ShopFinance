@@ -6,6 +6,9 @@ public class Sale : BaseEntityAudit<Guid>  // Agregada herencia
 {
     public Guid OrderId { get; set; } // Referencia al pedido original
     public Guid? WarehouseId { get; set; }
+
+    public SaleChannel SaleChannel { get; set; }
+
     public string SaleNumber { get; set; } = string.Empty;
     
     public DateTime SaleDate { get; set; }

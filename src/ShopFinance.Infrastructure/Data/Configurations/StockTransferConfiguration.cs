@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ShopFinance.Domain.Entities;
+using ShopFinance.Domain.Enums;
 
 namespace ShopFinance.Infrastructure.Data.Configurations;
 

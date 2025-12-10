@@ -1,0 +1,443 @@
+﻿@attribute [Route(PageRoute.Phases)]
+@attribute [AccessPoint(AppMenu.MenuSystem, "Gestión de Fases")]
+@using ShopFinance.Application.Features.Phases.DTOs
+@using ShopFinance.Application.Features.Phases.Queries
+@using ShopFinance.Application.Features.Phases.Commands
+
+<PageHeader Title="Gestión de Fases" Icon="@Icons.Material.Filled.ListAlt">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+<MudDrawer @bind-Open="@_openFilter" Fixed="false" Width="350px" Anchor="Anchor.Right" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Filtros de búsqueda</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing="2" Class="pa-4">
+            <MudItem xs="12">
+                <MudSelect T="bool?"
+                           @bind-Value="_filter.IsInitial"
+                           Label="Fase Inicial"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true"
+                           AdornmentIcon="@Icons.Material.Filled.PlayArrow">
+                    <MudSelectItem T="bool?" Value="true">Sí</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="false">No</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudSelect T="bool?"
+                           @bind-Value="_filter.IsFinal"
+                           Label="Fase Final"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true"
+                           AdornmentIcon="@Icons.Material.Filled.Stop">
+                    <MudSelectItem T="bool?" Value="true">Sí</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="false">No</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudSelect T="bool?"
+                           @bind-Value="_filter.Required"
+                           Label="Requerida"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true"
+                           AdornmentIcon="@Icons.Material.Filled.PriorityHigh">
+                    <MudSelectItem T="bool?" Value="true">Sí</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="false">No</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudButtonGroup Size="Size.Small" Variant="Variant.Filled">
+                    <MudButton Color="Color.Secondary"
+                               OnClick="OnCancelFilter">
+                        Cancelar
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="OnClearFilter"
+                               Disabled="_loading">
+                        Limpiar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="ApplyFilters"
+                               Disabled="_loading">
+                        Filtrar
+                    </MudButton>
+                </MudButtonGroup>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="_dataGridRef"
+             Loading="_loading"
+             T="PhaseListItemDto">
+    <ToolBarContent>
+        <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+            <MudTextField T="string"
+                          ValueChanged="@(s=>OnSearch(s))"
+                          Placeholder="Buscar por código o nombre..."
+                          Adornment="Adornment.Start"
+                          Clearable="true"
+                          Class="flex-grow-0"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small">
+            </MudTextField>
+            <MudIconButton Icon="@Icons.Material.Outlined.FilterAlt"
+                           Class="align-self-end pa-1"
+                           Size="Size.Medium"
+                           OnClick="OnFilterClicked" />
+        </MudStack>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+            <MudTooltip Text="Actualizar">
+                <MudIconButton Icon="@Icons.Material.Outlined.Refresh"
+                               Size="Size.Small"
+                               Color="Color.Info"
+                               OnClick="RefreshData"
+                               Disabled="_loading" />
+            </MudTooltip>
+            <MudTooltip Text="Sincronizar desde código">
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Outlined.Sync"
+                           OnClick="SyncPhases"
+                           Disabled="_loading">
+                    Sincronizar
+                </MudButton>
+            </MudTooltip>
+            <MudTooltip Text="Agregar Fase">
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Outlined.Add"
+                           OnClick="AddClick"
+                           Disabled="_loading">
+                    @AppStrings.New
+                </MudButton>
+            </MudTooltip>
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <HierarchyColumn T="PhaseListItemDto" />
+        <PropertyColumn Title="Código" Property="x=>x.Code" Sortable="true" StickyLeft="true" />
+        <PropertyColumn Title="Nombre" Property="x=>x.PhaseName" Sortable="true" />
+        <PropertyColumn Title="Orden" Property="x=>x.Order" Sortable="true" />
+        <PropertyColumn Title="Ruta" Property="x=>x.Route" />
+        <TemplateColumn Title="Inicial">
+            <CellTemplate>
+                @if (context.Item.IsInitial)
+                {
+                    <MudStack Row="true" Justify="Justify.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                    </MudStack>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Final">
+            <CellTemplate>
+                @if (context.Item.IsFinal)
+                {
+                    <MudStack Row="true" Justify="Justify.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Info" Size="Size.Small" />
+                    </MudStack>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Requerida">
+            <CellTemplate>
+                @if (context.Item.Required)
+                {
+                    <MudStack Row="true" Justify="Justify.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.PriorityHigh" Color="Color.Warning" Size="Size.Small" />
+                    </MudStack>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Title="Estados" Property="x=>x.StateCount" />
+        <TemplateColumn Title="En Uso">
+            <CellTemplate>
+                @if (context.Item.IsInUse)
+                {
+                    <MudChip Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">En Uso</MudChip>
+                }
+                else
+                {
+                    <MudChip Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">Libre</MudChip>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn HeaderStyle="width:140px;min-width:140px;" StickyRight="true" Resizable="false" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                    <MudTooltip Text="Detalles">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Search"
+                                       Color="Color.Success"
+                                       OnClick="() => DetailClick(context.Item.Id)"
+                                       Disabled="_loading" />
+                    </MudTooltip>
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Size="Size.Small"
+                                       Icon="@Icons.Material.Outlined.Edit"
+                                       Color="Color.Primary"
+                                       OnClick="() => EditClick(context.Item.Id)"
+                                       Disabled="_loading || context.Item.IsInUse" />
+                    </MudTooltip>
+                    
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <ChildRowContent>
+        <MudGrid Spacing="2" Class="py-2">
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.Code" Label="Código"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.Order" Label="Orden"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.Route" Label="Ruta"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.PhaseName" Label="Nombre"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@(context.Item.IsInitial ? "Sí" : "No")" Label="Es Inicial"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@(context.Item.IsFinal ? "Sí" : "No")" Label="Es Final"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@(context.Item.Required ? "Sí" : "No")" Label="Requerida"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@context.Item.StateCount" Label="Estados Configurados"></ReadOnlyField>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <ReadOnlyField Value="@(context.Item.IsInUse ? "Sí" : "No")"
+                               Label="En Uso">
+                </ReadOnlyField>
+            </MudItem>
+        </MudGrid>
+    </ChildRowContent>
+    <PagerContent>
+        <MudDataGridPager T="PhaseListItemDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="py-4">
+            <MudIcon Icon="@Icons.Material.Outlined.ListAlt" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay fases registradas
+        </MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    </LoadingContent>
+</MudDataGrid>
+
+@code {
+    #region Fields
+    private MudDataGrid<PhaseListItemDto> _dataGridRef = null!;
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Fases", href: null, disabled: true)
+    };
+
+    private GetPhasesQuery _filter = new();
+    private GetPhasesQuery _origFilter = new();
+    private bool _loading = false;
+    private bool _openFilter;
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            // Aquí puedes cargar datos iniciales si es necesario
+            await Task.Delay(100); // Pequeño delay para UI
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<GridData<PhaseListItemDto>> GetTableData(GridState<PhaseListItemDto> gridState)
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            ConfigureFilter(gridState);
+            var paginatedList = await _queryMediator.QueryAsync(_filter);
+
+            return new GridData<PhaseListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar fases: {ex.Message}", Severity.Error);
+            return new GridData<PhaseListItemDto>()
+            {
+                TotalItems = 0,
+                Items = Enumerable.Empty<PhaseListItemDto>()
+            };
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfigureFilter(GridState<PhaseListItemDto> gridState)
+    {
+        _filter.Page = gridState.Page + 1;
+        _filter.PageSize = gridState.PageSize;
+
+        // Configurar ordenamiento
+        var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
+        {
+            _filter.SortColumn = sortDefinition.SortBy;
+            _filter.SortDescending = sortDefinition.Descending;
+        }
+        else
+        {
+            // Ordenamiento por defecto
+            _filter.SortColumn = nameof(PhaseListItemDto.Order);
+            _filter.SortDescending = false;
+        }
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task RefreshData()
+    {
+        if (_dataGridRef != null)
+        {
+            await _dataGridRef.ReloadServerData();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _openFilter = false;
+        await RefreshData();
+    }
+
+    private async Task OnClearFilter()
+    {
+        _filter = new GetPhasesQuery();
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnCancelFilter()
+    {
+        _filter = _origFilter;
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnSearch(string? text)
+    {
+        _filter.SearchText = text;
+        await RefreshData();
+    }
+
+    private void OnFilterClicked()
+    {
+        // backup original filter
+        _origFilter = (GetPhasesQuery)_filter.Clone();
+        _openFilter = true;
+    }
+    #endregion
+
+    #region CRUD Operations
+    private void AddClick()
+    {
+        _navManager.NavigateTo("phases/new");
+    }
+
+    private void EditClick(int id)
+    {
+        _navManager.NavigateTo($"phases/edit/{id}", true);
+    }
+
+    private void DetailClick(int id)
+    {
+        _navManager.NavigateTo($"phases/detail/{id}", true);
+    }
+
+  
+
+    private async Task SyncPhases()
+    {
+        await _dialogService.ShowConfirmDialog(
+            "¿Desea sincronizar las fases desde el código fuente?",
+            "Sincronizar Fases",
+            async (e) =>
+            {
+                try
+                {
+                    var result = await _commandMediator.SendAsync(new SyncPhasesCommand
+                    {
+                        Assembly = System.Reflection.Assembly.GetExecutingAssembly()
+                    });
+
+                    if (result.IsSuccess)
+                    {
+                        await _dataGridRef.ReloadServerData();
+                        _snackbarService.Add(
+                            result.SuccessMessage ?? "Fases sincronizadas exitosamente",
+                            Severity.Success);
+                    }
+                    else
+                    {
+                        _snackbarService.Add(
+                            result.Errors.FirstOrDefault() ?? "Error al sincronizar fases",
+                            Severity.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+                }
+            });
+    }
+    #endregion
+}

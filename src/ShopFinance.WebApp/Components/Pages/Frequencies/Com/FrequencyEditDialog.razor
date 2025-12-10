@@ -1,0 +1,216 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Services.Frequencies
+@using ShopFinance.Application.Services.Frequencies.DTOs
+@inject IFrequencyService _frequencyService
+@inject ISnackbar _snackbarService
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="SaveSubmit" id="frequencyForm">
+            <FluentValidationValidator @ref="_fluentValidationValidator" />
+
+            <MudGrid Spacing="2">
+                <!-- Nombre -->
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Nombre *"
+                                  @bind-Value="_model.Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Name)" HelperText="Ej: Mensual, Quincenal, Semanal">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Código -->
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Código *"
+                                  @bind-Value="_model.Code"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Code)"
+                                  HelperText="Solo mayúsculas y guiones bajos (ej: MONTHLY, BIWEEKLY)">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Días entre pagos -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField Label="Días entre pagos *"
+                                     @bind-Value="_model.DaysInterval"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Required="true"
+                                     Immediate="true"
+                                     Min="1"
+                                     Max="365"
+                                     For="@(() => _model.DaysInterval)"
+                                     HelperText="Ej: 30 (mensual), 15 (quincenal), 7 (semanal)"                                     >
+                    </MudNumericField>
+                </MudItem>
+
+                <!-- Periodos por año -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField Label="Periodos por año *"
+                                     @bind-Value="_model.PeriodsPerYear"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Required="true"
+                                     Immediate="true"
+                                     Min="1"
+                                     Max="365"
+                                     For="@(() => _model.PeriodsPerYear)"
+                                     HelperText="Ej: 12 (mensual), 24 (quincenal), 52 (semanal)">
+                    </MudNumericField>
+                </MudItem>
+
+                <!-- Descripción -->
+                <MudItem xs="12">
+                    <MudTextField Label="Descripción"
+                                  @bind-Value="_model.Description"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="2"
+                                  For="@(() => _model.Description)">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Estado Activo -->
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_model.IsActive"
+                               Label="Frecuencia Activa"
+                               Color="Color.Primary" />
+                </MudItem>
+
+                <!-- Información calculada y validación -->
+                @if (_model.DaysInterval > 0 && _model.PeriodsPerYear > 0)
+                {
+                    <MudItem xs="12">
+                        @{
+                            var totalDays = _model.DaysInterval * _model.PeriodsPerYear;
+                            var isValid = Math.Abs(totalDays - 365) <= 30;
+                            var severity = isValid ? Severity.Success : Severity.Warning;
+                        }
+                        <MudAlert Severity="@severity" Variant="Variant.Filled" Elevation="0">
+                            <MudText>Información calculada:</MudText>
+                            <MudText>• Días totales: <strong>@totalDays</strong> días (@_model.DaysInterval × @_model.PeriodsPerYear)</MudText>
+                            <MudText>• Diferencia con año: <strong>@Math.Abs(totalDays - 365)</strong> días</MudText>
+                            @if (!isValid)
+                            {
+                                <MudText Class="mt-1"><small>Nota: La multiplicación debería aproximarse a 365 días (±30)</small></MudText>
+                            }
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="SaveSubmit"
+                   Disabled="_isSaving">
+            @(_isSaving ? "Guardando..." : "Guardar")
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="@(() => Cancel())">
+            Cancelar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance? MudDialog { get; set; }
+    [Parameter] public int FrequencyId { get; set; }
+
+    private FluentValidationValidator? _fluentValidationValidator;
+    private FrequencyEditDto _model = new FrequencyEditDto();
+    private bool _isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (FrequencyId > 0)
+        {
+            await LoadFrequency();
+        }
+        else
+        {
+            // Valores por defecto para nueva frecuencia
+            _model.IsActive = true;
+            // Valores comunes por defecto para facilitar al usuario
+            _model.DaysInterval = 30;
+            _model.PeriodsPerYear = 12;
+        }
+    }
+
+    private async Task LoadFrequency()
+    {
+        try
+        {
+            var result = await _frequencyService.GetById(FrequencyId);
+            if (result.IsSuccess)
+            {
+                _model = result.Value;
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al cargar la frecuencia", Severity.Error);
+                Cancel();
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+            Cancel();
+        }
+    }
+
+    private async Task SaveSubmit()
+    {
+        if (_isSaving) return;
+
+        var isValid = await _fluentValidationValidator!.ValidateAsync();
+        if (!isValid) return;
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _frequencyService.Save(_model);
+
+            if (result.IsSuccess)
+            {
+                var message = FrequencyId == 0
+                    ? "Frecuencia creada exitosamente"
+                    : "Frecuencia actualizada exitosamente";
+
+                _snackbarService.Add(message, Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al guardar", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+}

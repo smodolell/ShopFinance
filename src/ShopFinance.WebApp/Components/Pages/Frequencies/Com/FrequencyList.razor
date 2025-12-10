@@ -1,0 +1,205 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Services.Frequencies
+@using ShopFinance.Application.Services.Frequencies.DTOs
+@inject IFrequencyService _frequencyService
+@inject IDialogService _dialogService
+@inject ISnackbar _snackbarService
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="dataGridRef"
+             T="FrequencyListItemDto">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6" Class="ml-2">Frecuencias de Pago</MudText>
+        <MudSpacer></MudSpacer>
+        <div style="width:300px">
+            <MudTextField T="string"
+                          @bind-Value="@_filter.SearchText"
+                          Margin="Margin.Dense"
+                          Placeholder="Buscar por nombre o código..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search">
+            </MudTextField>
+        </div>
+        <MudIconButton Size="MudBlazor.Size.Medium"
+                       Icon="@Icons.Material.Filled.Refresh"
+                       OnClick="()=>dataGridRef.ReloadServerData()"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       Title="Actualizar">
+        </MudIconButton>
+        <MudButton Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(()=>AddClick())"
+                   Color="Color.Primary">
+            Nueva Frecuencia
+        </MudButton>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Title="ID" Property="x=>x.Id" Sortable="true" Width="80px" />
+        <PropertyColumn Title="Nombre" Property="x=>x.Name" Sortable="true" />
+        <PropertyColumn Title="Código" Property="x=>x.Code" Sortable="true" />
+        <PropertyColumn Title="Días" Property="x=>x.DaysInterval"  Sortable="true"/>
+        <PropertyColumn Title="Periodos/Año" Property="x=>x.PeriodsPerYear" Sortable="true" />
+        <PropertyColumn Title="Descripción" Property="x=>x.Description" Sortable="false" />
+
+        <TemplateColumn Title="Activo" Width="100px">
+            <CellTemplate>
+                <MudSwitch Value="context.Item.IsActive" T="bool"
+                           ValueChanged="v => ChangeActive(context.Item.Id,v)"
+                           Color="Color.Primary"
+                           Size="Size.Small">
+                </MudSwitch>
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn HeaderStyle="white-space:nowrap;" StickyRight="true" Width="120px" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.FlexEnd">
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Size="@MudBlazor.Size.Small"
+                                       Icon="@Icons.Material.Outlined.Edit"
+                                       Color="Color.Primary"
+                                       OnClick="()=>EditClick(context.Item.Id)" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Size="@MudBlazor.Size.Small"
+                                       Icon="@Icons.Material.Outlined.Delete"
+                                       Color="Color.Error"
+                                       OnClick="()=>DeleteClick(context.Item)" />
+                    </MudTooltip>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="FrequencyListItemDto" PageSizeOptions="new int[]{10, 25, 50}" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="pa-4">
+            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay frecuencias de pago registradas
+        </MudText>
+    </NoRecordsContent>
+</MudDataGrid>
+
+@code {
+    private FrequencyFilterDto _filter = new FrequencyFilterDto();
+    private MudDataGrid<FrequencyListItemDto> dataGridRef = null!;
+
+    private DialogOptions _optionsDialogs = new DialogOptions()
+    {
+        CloseButton = true,
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseOnEscapeKey = true
+    };
+
+    private async Task<GridData<FrequencyListItemDto>> GetTableData(GridState<FrequencyListItemDto> gridState)
+    {
+        try
+        {
+            _filter.Page = gridState.Page + 1;
+            _filter.PageSize = gridState.PageSize;
+
+            var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+            if (sortDefinition != null)
+            {
+                _filter.SortColumn = sortDefinition.SortBy;
+                _filter.SortDescending = sortDefinition.Descending;
+            }
+
+            var paginatedList = await _frequencyService.GetPaginated(_filter);
+
+            return new GridData<FrequencyListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos: {ex.Message}", Severity.Error);
+            return new GridData<FrequencyListItemDto>()
+            {
+                TotalItems = 0,
+                Items = new List<FrequencyListItemDto>()
+            };
+        }
+    }
+
+    private async Task AddClick()
+    {
+        var parameters = new DialogParameters();
+        var dialog = await _dialogService.ShowAsync<FrequencyEditDialog>("Nueva Frecuencia", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            await dataGridRef.ReloadServerData();
+            _snackbarService.Add("Frecuencia creada exitosamente", Severity.Success);
+        }
+    }
+
+    private async Task EditClick(int id)
+    {
+        var parameters = new DialogParameters { { "FrequencyId", id } };
+        var dialog = await _dialogService.ShowAsync<FrequencyEditDialog>("Editar Frecuencia", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            await dataGridRef.ReloadServerData();
+            _snackbarService.Add("Frecuencia actualizada exitosamente", Severity.Success);
+        }
+    }
+
+    private async Task DeleteClick(FrequencyListItemDto item)
+    {
+        await _dialogService.ShowConfirmDialog($"¿Está seguro que desea eliminar la frecuencia '{item.Name}'?", "Eliminar", async (e) =>
+        {
+            try
+            {
+                var deleteResult = await _frequencyService.Delete(item.Id);
+                if (deleteResult.IsSuccess)
+                {
+                    await dataGridRef.ReloadServerData();
+                    _snackbarService.Add(deleteResult.SuccessMessage ?? "Frecuencia eliminada exitosamente", Severity.Success);
+                }
+                else
+                {
+                    _snackbarService.Add(deleteResult.Errors.FirstOrDefault() ?? "Error al eliminar", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Add(ex.Message, Severity.Error);
+            }
+        });
+    }
+
+    private async Task ChangeActive(int id, bool active)
+    {
+        try
+        {
+            var result = await _frequencyService.ChangeActive(id, active);
+            if (result.IsSuccess)
+            {
+                await dataGridRef.ReloadServerData();
+                _snackbarService.Add(result.SuccessMessage ?? "Estado actualizado", Severity.Success);
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al cambiar estado", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}

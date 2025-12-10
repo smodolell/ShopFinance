@@ -1,0 +1,207 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Services.InterestRates
+@using ShopFinance.Application.Services.InterestRates.DTOs
+@inject IInterestRateService _interestRateService
+@inject IDialogService _dialogService
+@inject ISnackbar _snackbarService
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="dataGridRef"
+             T="InterestRateListItemDto">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6" Class="ml-2">Tasas de Interés</MudText>
+        <MudSpacer></MudSpacer>
+        <div style="width:300px">
+            <MudTextField T="string"
+                          @bind-Value="@_filter.SearchText"
+                          Margin="Margin.Dense"
+                          Placeholder="Buscar por nombre..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search">
+            </MudTextField>
+        </div>
+        <MudIconButton Size="MudBlazor.Size.Medium"
+                       Icon="@Icons.Material.Filled.Refresh"
+                       OnClick="()=>dataGridRef.ReloadServerData()"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       Title="Actualizar">
+        </MudIconButton>
+        <MudButton Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(()=>AddClick())"
+                   Color="Color.Primary">
+            Nueva Tasa
+        </MudButton>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Title="ID" Property="x=>x.Id" Sortable="true" Width="80px" />
+        <PropertyColumn Title="Nombre" Property="x=>x.RateName" Sortable="true" />
+        <PropertyColumn Title="Tasa Anual (%)" Property="x=>x.AnnualPercentage" Sortable="true" />
+        <PropertyColumn Title="Tasa Mensual (%)" Property="x=>x.MonthlyPercentage" Sortable="true" />
+        <PropertyColumn Title="Fecha Inicio" Property="x=>x.EffectiveDate" Format="dd/MM/yyyy" Sortable="true" />
+        <PropertyColumn Title="Fecha Fin" Property="x=>x.ExpirationDate" Format="dd/MM/yyyy" Sortable="true" />
+
+        <TemplateColumn Title="Activo" Width="100px">
+            <CellTemplate>
+                <MudSwitch Value="context.Item.IsActive" T="bool"
+                           ValueChanged="v => ChangeActive(context.Item.Id,v)"
+                           Color="Color.Primary"
+                           Size="Size.Small">
+                </MudSwitch>
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn HeaderStyle="white-space:nowrap;" StickyRight="true" Width="120px" Title="Acciones">
+            <CellTemplate>
+                <MudStack Row="true" Justify="Justify.FlexEnd">
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Size="@MudBlazor.Size.Small"
+                                       Icon="@Icons.Material.Outlined.Edit"
+                                       Color="Color.Primary"
+                                       OnClick="()=>EditClick(context.Item.Id)" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Size="@MudBlazor.Size.Small"
+                                       Icon="@Icons.Material.Outlined.Delete"
+                                       Color="Color.Error"
+                                       OnClick="()=>DeleteClick(context.Item)" />
+                    </MudTooltip>
+
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="InterestRateListItemDto" PageSizeOptions="new int[]{10, 25, 50}" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="pa-4">
+            <MudIcon Icon="@Icons.Material.Filled.MoneyOff" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay tasas de interés registradas
+        </MudText>
+    </NoRecordsContent>
+</MudDataGrid>
+
+@code {
+    private InterestRateFilterDto _filter = new InterestRateFilterDto();
+    private MudDataGrid<InterestRateListItemDto> dataGridRef = null!;
+
+    private DialogOptions _optionsDialogs = new DialogOptions()
+    {
+        CloseButton = true,
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseOnEscapeKey = true
+    };
+
+    private async Task<GridData<InterestRateListItemDto>> GetTableData(GridState<InterestRateListItemDto> gridState)
+    {
+        try
+        {
+            _filter.Page = gridState.Page + 1;
+            _filter.PageSize = gridState.PageSize;
+
+            var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+            if (sortDefinition != null)
+            {
+                _filter.SortColumn = sortDefinition.SortBy;
+                _filter.SortDescending = sortDefinition.Descending;
+            }
+
+            var paginatedList = await _interestRateService.GetPaginated(_filter);
+
+            return new GridData<InterestRateListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos: {ex.Message}", Severity.Error);
+            return new GridData<InterestRateListItemDto>()
+            {
+                TotalItems = 0,
+                Items = new List<InterestRateListItemDto>()
+            };
+        }
+    }
+
+    private async Task AddClick()
+    {
+        var parameters = new DialogParameters();
+        var dialog = await _dialogService.ShowAsync<InterestRateEditDialog>("Nueva Tasa de Interés", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            await dataGridRef.ReloadServerData();
+            _snackbarService.Add("Tasa de interés creada exitosamente", Severity.Success);
+        }
+    }
+
+    private async Task EditClick(int id)
+    {
+        var parameters = new DialogParameters { { "InterestRateId", id } };
+        var dialog = await _dialogService.ShowAsync<InterestRateEditDialog>("Editar Tasa de Interés", parameters, _optionsDialogs);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            await dataGridRef.ReloadServerData();
+            _snackbarService.Add("Tasa de interés actualizada exitosamente", Severity.Success);
+        }
+    }
+
+    private async Task DeleteClick(InterestRateListItemDto item)
+    {
+        await _dialogService.ShowConfirmDialog($"¿Está seguro que desea eliminar la tasa '{item.RateName}'?", "Eliminar", async (e) =>
+        {
+
+            try
+            {
+                var deleteResult = await _interestRateService.Delete(item.Id);
+                if (deleteResult.IsSuccess)
+                {
+                    await dataGridRef.ReloadServerData();
+                    _snackbarService.Add(deleteResult.SuccessMessage ?? "Tasa eliminada exitosamente", Severity.Success);
+                }
+                else
+                {
+                    _snackbarService.Add(deleteResult.Errors.FirstOrDefault() ?? "Error al eliminar", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Add(ex.Message, Severity.Error);
+            }
+        });
+    }
+
+    private async Task ChangeActive(int id, bool active)
+    {
+        try
+        {
+            var result = await _interestRateService.ChangeActive(id, active);
+            if (result.IsSuccess)
+            {
+                await dataGridRef.ReloadServerData();
+                _snackbarService.Add(result.SuccessMessage ?? "Estado actualizado", Severity.Success);
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al cambiar estado", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}

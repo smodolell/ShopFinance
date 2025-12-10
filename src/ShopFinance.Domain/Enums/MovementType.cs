@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ShopFinance.Domain.Entities;
+namespace ShopFinance.Domain.Enums;
 
 public enum MovementType
 {

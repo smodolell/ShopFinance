@@ -13,10 +13,33 @@
     <MudGrid Spacing="2">
         <MudItem xs="12" sm="6" md="4">
             <MudSelect Margin="Margin.Dense"
+                       T="Guid"
+                       @bind-Value="_model.WarehouseId"
+                       For="@(() => _model.WarehouseId)"
+                       Label="Almacen"
+                       Required="true"
+                       Variant="Variant.Outlined"
+                       Disabled="_isSubmitting || _isLoading"
+                       HelperText="Seleccione una Almacen">
+                @if (_warehouses != null && _warehouses.Any())
+                {
+                    @foreach (var item in _warehouses)
+                    {
+                        <MudSelectItem T="Guid" Value="@(Guid.Parse(item.Value))">@item.Text</MudSelectItem>
+                    }
+                }
+                else
+                {
+                    <MudSelectItem T="Guid" Value="Guid.Empty" Disabled="true">Cargando almacenes...</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudSelect Margin="Margin.Dense"
                        T="int?"
                        @bind-Value="_model.CategoryId"
                        For="@(() => _model.CategoryId)"
-                       Label="Categoría *"
+                       Label="Categoría"
                        Required="true"
                        Variant="Variant.Outlined"
                        Disabled="_isSubmitting || _isLoading"
@@ -89,7 +112,7 @@
             <MudNumericField @bind-Value="_model.CostPrice"
                              Variant="Variant.Outlined"
                              Margin="Margin.Dense"
-                             Label="Precio de Costo *"
+                             Label="Precio de Costo"
                              Required="true"
                              For="@(() => _model.CostPrice)"
                              Disabled="_isSubmitting"
@@ -103,7 +126,7 @@
             <MudNumericField @bind-Value="_model.SalePrice"
                              Variant="Variant.Outlined"
                              Margin="Margin.Dense"
-                             Label="Precio de Venta *"
+                             Label="Precio de Venta"
                              Required="true"
                              For="@(() => _model.SalePrice)"
                              Disabled="_isSubmitting"
@@ -117,7 +140,7 @@
             <MudNumericField @bind-Value="_model.Stock"
                              Variant="Variant.Outlined"
                              Margin="Margin.Dense"
-                             Label="Stock Inicial *"
+                             Label="Stock Inicial"
                              Required="true"
                              For="@(() => _model.Stock)"
                              Disabled="_isSubmitting"
@@ -182,21 +205,23 @@
 
 @code {
     #region Fields
-    private CreateProductCommand _model = new();
+    private CreateProductWithWarehouseCommand _model = new();
     private FluentValidationValidator? _fluentValidationValidator;
     private List<SelectListItemDto>? _categories;
+    private List<SelectListItemDto>? _warehouses;
     private bool _isSubmitting = false;
     private bool _isLoading = true;
     #endregion
 
     #region Breadcrumbs
     private readonly List<BreadcrumbItem> _breadcrumbItems = new()
-{
+    {
         new BreadcrumbItem("Productos", href: PageRoute.Products),
         new BreadcrumbItem("Nuevo Producto", href: null, disabled: true)
     };
 
     #endregion
+
     #region Lifecycle Methods
     protected override async Task OnInitializedAsync()
     {
@@ -210,7 +235,14 @@
         try
         {
             _isLoading = true;
-            _categories = await _selectListService.Categories();
+            if (_categories == null)
+            {
+                _categories = await _selectListService.Categories();
+            }
+            if (_warehouses == null)
+            {
+                _warehouses = await _selectListService.Warehouses();
+            }
 
             // Configuración inicial del modelo
             //_model.State = ProductState.Active;
@@ -260,6 +292,7 @@
         return true;
     }
     #endregion
+
     #region CRUD Operations
     private async Task CreateProductAsync()
     {

@@ -1,0 +1,11 @@
+﻿@attribute [Route(PageRoute.Applicant + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Solicitante", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.Applicant, "Solicitante", 1, IsInitial = true, IsRequired = true, StatesProviderType = typeof(CreditRequestStatesProvider))]
+
+<h3>CreditRequests</h3>
+
+@code {
+
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}

@@ -1,4 +1,4 @@
-﻿using ShopFinance.Domain.Entities;
+﻿using ShopFinance.Domain.Enums;
 
 namespace ShopFinance.Application.Features.Warehouses.DTOs;
 

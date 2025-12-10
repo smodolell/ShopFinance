@@ -1,0 +1,340 @@
+﻿@attribute [Route(PageRoute.StockMovements)]
+@attribute [AccessPoint(AppMenu.MenuWarehouse, "Movimiento")]
+@using ShopFinance.Application.Features.StockMovements.DTOs
+@using ShopFinance.Application.Features.StockMovements.Queries
+@using ShopFinance.Domain.Enums
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Movimientos de Stock" Icon="@AppMenu.MenuWarehouseIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+<MudDrawer @bind-Open="@_openFilter" Fixed="false" Width="350px" Anchor="Anchor.Right" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Filtros de búsqueda</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing="2" Class="pa-4">
+            <MudItem xs="12">
+                <MudSelect T="Guid?"
+                           @bind-Value="_filter.WarehouseId"
+                           Label="Almacén"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+                    @if (_warehouses != null)
+                    {
+                        @foreach (var warehouse in _warehouses)
+                        {
+                            <MudSelectItem T="Guid?" Value="@(Guid.Parse(warehouse.Value))">@warehouse.Text</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudItem>
+            @*<MudItem xs="12">
+                <MudSelect T="Guid?"
+                           @bind-Value="_filter.ProductId"
+                           Label="Producto"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+                    @if (_products != null)
+                    {
+                        @foreach (var product in _products)
+                        {
+                            <MudSelectItem T="Guid?" Value="@product.Id">@product.Name</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudItem>*@
+            <MudItem xs="12">
+                <MudEnumSelect TEnum="MovementType?"
+                               @bind-Value="_filter.MovementType"
+                               Margin="Margin.Dense"
+                               Label="Tipo de movimiento"
+                               Clearable="true"
+                               Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudEnumSelect TEnum="MovementSource?"
+                               @bind-Value="_filter.Source"
+                               Margin="Margin.Dense"
+                               Label="Origen"
+                               Clearable="true"
+                               Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudDateRangePicker @bind-DateRange="_movementDateRange"
+                                    Label="Fecha de movimiento"
+                                    Margin="Margin.Dense"
+                                    Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButtonGroup Size="Size.Small" Variant="Variant.Filled">
+                    <MudButton Color="Color.Secondary"
+                               OnClick="OnCancelFilter">
+                        Cancelar
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="OnClearFilter"
+                               Disabled="_loading">
+                        Limpiar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="ApplyFilters"
+                               Disabled="_loading">
+                        Filtrar
+                    </MudButton>
+                </MudButtonGroup>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+<MudDataGrid Outlined="true"
+             Dense="true"
+             Bordered="true"
+             ServerData="GetTableData"
+             FixedHeader="true"
+             SortMode="SortMode.Single"
+             @ref="_dataGridRef"
+             Loading="_loading"
+             T="StockMovementListItemDto">
+    <ToolBarContent>
+        <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+            <MudTextField T="string"
+                          ValueChanged="@(s=>OnSearch(s))"
+                          Placeholder="Buscar por producto, almacén, notas..."
+                          Adornment="Adornment.Start"
+                          Clearable="true"
+                          Class="flex-grow-0"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small">
+            </MudTextField>
+            <MudIconButton Icon="@Icons.Material.Outlined.FilterAlt"
+                           Class="align-self-end pa-1"
+                           Size="Size.Medium"
+                           OnClick="OnFilterClicked" />
+        </MudStack>
+        <MudSpacer></MudSpacer>
+        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+            <MudTooltip Text="Actualizar">
+                <MudIconButton Icon="@Icons.Material.Outlined.Refresh"
+                               Size="Size.Small"
+                               Color="Color.Info"
+                               OnClick="RefreshData"
+                               Disabled="_loading" />
+            </MudTooltip>
+            <MudTooltip Text="Exportar">
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Small"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Outlined.FileDownload"
+                           OnClick="ExportClick"
+                           Disabled="_loading">
+                    Exportar
+                </MudButton>
+            </MudTooltip>
+        </MudStack>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Title="Fecha" Property="x=>x.MovementDate" Format="dd/MM/yyyy HH:mm" />
+        <PropertyColumn Title="Almacén" Property="x=>x.WarehouseName" />
+        <PropertyColumn Title="Producto" Property="x=>x.ProductName" />
+        <PropertyColumn Title="Código" Property="x=>x.ProductCode" />
+        <PropertyColumn Title="Tipo" Property="x=>x.MovementTypeDisplay" />
+        <PropertyColumn Title="Origen" Property="x=>x.SourceDisplay" />
+        @*<PropertyColumn Title="Cantidad">
+            <CellTemplate>
+                <MudText Color="@(context.Item.IsPositiveMovement ? Color.Success : Color.Error)">
+                    @(context.Item.IsPositiveMovement ? "+" : "")@context.Item.Quantity
+                </MudText>
+            </CellTemplate>
+        </PropertyColumn>*@
+        <PropertyColumn Title="Stock Anterior" Property="x=>x.PreviousStock" />
+        <PropertyColumn Title="Stock Nuevo" Property="x=>x.NewStock" />
+        <PropertyColumn Title="Notas" Property="x=>x.Notes" />
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="StockMovementListItemDto" />
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Class="py-4">
+            <MudIcon Icon="@Icons.Material.Outlined.Moving" Size="Size.Large" Color="Color.Primary" />
+            <br />
+            No hay movimientos de stock registrados
+        </MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    </LoadingContent>
+</MudDataGrid>
+
+@code {
+    #region Fields
+    private MudDataGrid<StockMovementListItemDto> _dataGridRef = null!;
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Inventario", href: null),
+        new BreadcrumbItem("Movimientos de Stock", href: null, disabled: true)
+    };
+
+    private GetStockMovementsQuery _filter = new();
+    private GetStockMovementsQuery _origFilter = new();
+    private DateRange _movementDateRange = new();
+    private bool _loading = false;
+    private bool _openFilter;
+    private List<SelectListItemDto>? _warehouses;
+    private List<SelectListItemDto>? _products;
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+    #endregion
+
+    #region Data Methods
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            _loading = true;
+
+            // Cargar listas para filtros
+            if (_warehouses == null)
+            {
+                _warehouses = await _selectListService.Warehouses();
+            }
+
+            if (_products == null)
+            {
+                //var productsQuery = new GetProductsQuery { PageSize = 100 };
+                //var productsResult = await _queryMediator.QueryAsync(productsQuery);
+                //_products = _selectListService.Value.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos iniciales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<GridData<StockMovementListItemDto>> GetTableData(GridState<StockMovementListItemDto> gridState)
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            ConfigureFilter(gridState);
+            var paginatedList = await _queryMediator.QueryAsync(_filter);
+
+            return new GridData<StockMovementListItemDto>()
+            {
+                TotalItems = (int)paginatedList.PagedInfo.TotalRecords,
+                Items = paginatedList.Value
+            };
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar movimientos: {ex.Message}", Severity.Error);
+            return new GridData<StockMovementListItemDto>() { TotalItems = 0, Items = Enumerable.Empty<StockMovementListItemDto>() };
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfigureFilter(GridState<StockMovementListItemDto> gridState)
+    {
+        _filter.Page = gridState.Page + 1;
+        _filter.PageSize = gridState.PageSize;
+
+        // Configurar fechas de movimiento
+        _filter.MovementDateFrom = _movementDateRange.Start?.Date;
+        _filter.MovementDateTo = _movementDateRange.End?.Date.AddDays(1).AddSeconds(-1);
+
+        // Configurar ordenamiento
+        var sortDefinition = gridState.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
+        {
+            _filter.SortColumn = sortDefinition.SortBy;
+            _filter.SortDescending = sortDefinition.Descending;
+        }
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task RefreshData()
+    {
+        if (_dataGridRef != null)
+        {
+            await _dataGridRef.ReloadServerData();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _openFilter = false;
+        await RefreshData();
+    }
+
+    private async Task OnClearFilter()
+    {
+        _filter = new GetStockMovementsQuery();
+        _movementDateRange = new DateRange();
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnCancelFilter()
+    {
+        _filter = _origFilter;
+        await RefreshData();
+        _openFilter = false;
+    }
+
+    private async Task OnSearch(string? text)
+    {
+        _filter.SearchText = text;
+        await RefreshData();
+    }
+
+    private void OnFilterClicked()
+    {
+        // Backup del filtro original
+        _origFilter = new GetStockMovementsQuery
+        {
+            Page = _filter.Page,
+            PageSize = _filter.PageSize,
+            SearchText = _filter.SearchText,
+            SortColumn = _filter.SortColumn,
+            SortDescending = _filter.SortDescending,
+            WarehouseId = _filter.WarehouseId,
+            ProductId = _filter.ProductId,
+            MovementType = _filter.MovementType,
+            Source = _filter.Source,
+            MovementDateFrom = _filter.MovementDateFrom,
+            MovementDateTo = _filter.MovementDateTo
+        };
+
+        _openFilter = true;
+    }
+
+    private async Task ExportClick()
+    {
+        // Lógica para exportar movimientos a Excel/PDF
+        _snackbarService.Add("Funcionalidad de exportación en desarrollo", Severity.Info);
+    }
+    #endregion
+}

@@ -140,6 +140,9 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Property<decimal>("InterestTaxBalance")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("PeriodNumber")
+                        .HasColumnType("INTEGER");
+
                     b.Property<decimal>("Principal")
                         .HasColumnType("TEXT");
 
@@ -156,7 +159,7 @@ namespace ShopFinance.Infrastructure.Migrations
 
                     b.HasIndex("CreditId");
 
-                    b.ToTable("AmortizationScheduleEntry");
+                    b.ToTable("AmortizationSchedules");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Category", b =>
@@ -204,6 +207,9 @@ namespace ShopFinance.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("CreditRequestId")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("CreditState")
                         .HasColumnType("INTEGER");
 
@@ -219,6 +225,9 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Property<decimal>("PrincipalAmount")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("Rate")
                         .HasColumnType("TEXT");
 
@@ -230,11 +239,77 @@ namespace ShopFinance.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreditRequestId")
+                        .IsUnique();
+
                     b.HasIndex("CustomerId");
 
                     b.HasIndex("FrequencyId");
 
+                    b.HasIndex("QuotationId");
+
                     b.ToTable("Credits", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.CreditRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CreditId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PhaseStateId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhaseStateId");
+
+                    b.HasIndex("QuotationId")
+                        .IsUnique();
+
+                    b.ToTable("CreditRequests", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.CreditRequestPhase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreditRequestId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PhaseStateId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreditRequestId");
+
+                    b.HasIndex("PhaseStateId");
+
+                    b.ToTable("CreditRequestPhases");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Customer", b =>
@@ -269,13 +344,160 @@ namespace ShopFinance.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DaysInterval")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PeriodsPerYear")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("DaysInterval");
+
+                    b.ToTable("Frequencies", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "DAILY",
+                            DaysInterval = 1,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Diario",
+                            PeriodsPerYear = 365
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "WEEKLY",
+                            DaysInterval = 7,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Semanal",
+                            PeriodsPerYear = 52
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "BIWEEKLY",
+                            DaysInterval = 15,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Quincenal",
+                            PeriodsPerYear = 24
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "MONTHLY",
+                            DaysInterval = 30,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Mensual",
+                            PeriodsPerYear = 12
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "BIMONTHLY",
+                            DaysInterval = 60,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Bimestral",
+                            PeriodsPerYear = 6
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Code = "QUARTERLY",
+                            DaysInterval = 90,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Trimestral",
+                            PeriodsPerYear = 4
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Code = "SEMIANNUAL",
+                            DaysInterval = 180,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Semestral",
+                            PeriodsPerYear = 2
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Code = "ANNUAL",
+                            DaysInterval = 365,
+                            Description = "",
+                            IsActive = false,
+                            Name = "Anual",
+                            PeriodsPerYear = 1
+                        });
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.InterestRate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("AnnualPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("ExpirationDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("RateName")
+                        .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Frequencies", (string)null);
+                    b.HasIndex("EffectiveDate")
+                        .HasDatabaseName("IX_InterestRates_EffectiveDate");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_InterestRates_IsActive");
+
+                    b.HasIndex("RateName")
+                        .IsUnique()
+                        .HasDatabaseName("UK_InterestRates_Name");
+
+                    b.ToTable("InterestRates", (string)null);
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Movement", b =>
@@ -343,6 +565,9 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Property<string>("OrderNumber")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("QuotationId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("RequiredDate")
@@ -469,6 +694,169 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.ToTable("PaymentApplications");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.PaymentTerm", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NumberOfPayments")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("NumberOfPayments");
+
+                    b.ToTable("PaymentTerms", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "TERM_1",
+                            IsActive = false,
+                            Name = "Un Pago",
+                            NumberOfPayments = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "TERM_3",
+                            IsActive = false,
+                            Name = "3 Pagos",
+                            NumberOfPayments = 3
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "TERM_6",
+                            IsActive = false,
+                            Name = "6 Pagos",
+                            NumberOfPayments = 6
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "TERM_12",
+                            IsActive = false,
+                            Name = "12 Pagos",
+                            NumberOfPayments = 12
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "TERM_18",
+                            IsActive = false,
+                            Name = "18 Pagos",
+                            NumberOfPayments = 18
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Code = "TERM_24",
+                            IsActive = false,
+                            Name = "24 Pagos",
+                            NumberOfPayments = 24
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Code = "TERM_36",
+                            IsActive = false,
+                            Name = "36 Pagos",
+                            NumberOfPayments = 36
+                        });
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Phase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsFinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsInitial")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PhaseName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Route")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Phase");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.PhaseState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Canceled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Edition")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Initial")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PhaseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PhaseStateName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("PreviousPhase")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Refused")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhaseId");
+
+                    b.ToTable("PhaseState");
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -539,6 +927,312 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.HasIndex("State");
 
                     b.ToTable("Products", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Quotation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FrequencyId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("MonthlyPayment")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PrincipalAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QuotationPlanId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("State")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TaxRate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Term")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FrequencyId");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("QuotationPlanId");
+
+                    b.ToTable("Quotations");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationAdditionalCost", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CostType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPercentage")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CostType");
+
+                    b.HasIndex("QuotationId");
+
+                    b.ToTable("QuotationAdditionalCosts", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationAmortizationScheduleEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Interest")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("InterestTax")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PeriodNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Principal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalDue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DueDate");
+
+                    b.HasIndex("QuotationId", "PeriodNumber")
+                        .IsUnique();
+
+                    b.ToTable("QuotationAmortizationScheduleEntries", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationDiscount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DiscountType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiscountType");
+
+                    b.HasIndex("QuotationId");
+
+                    b.ToTable("QuotationDiscounts", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FinalEffectiveDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("InitialEffectiveDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("PlanName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TaxRateId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("TaxRateId");
+
+                    b.ToTable("QuotationPlans", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlanFrequency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FrequencyId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Order")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("QuotationPlanId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FrequencyId");
+
+                    b.HasIndex("QuotationPlanId", "FrequencyId")
+                        .IsUnique();
+
+                    b.ToTable("QuotationPlanFrequencies", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlanPaymentTerm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("InterestRateId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPromotional")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Order")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("PaymentTermId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("PromotionEndDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("QuotationPlanId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("SpecialRateOverride")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InterestRateId");
+
+                    b.HasIndex("PaymentTermId");
+
+                    b.HasIndex("QuotationPlanId", "PaymentTermId")
+                        .IsUnique();
+
+                    b.ToTable("QuotationPlanPaymentTerms", (string)null);
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlanPhase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PhaseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QuotationPlanId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhaseId");
+
+                    b.HasIndex("QuotationPlanId");
+
+                    b.ToTable("QuotationPlanPhases");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Role", b =>
@@ -613,6 +1307,9 @@ namespace ShopFinance.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("PaymentMethod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SaleChannel")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("SaleDate")
@@ -1023,6 +1720,49 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.ToTable("StockTransferItems", (string)null);
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.TaxRate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("ExpirationDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Percentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("EffectiveDate");
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("TaxRates", (string)null);
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1343,6 +2083,12 @@ namespace ShopFinance.Infrastructure.Migrations
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Credit", b =>
                 {
+                    b.HasOne("ShopFinance.Domain.Entities.CreditRequest", "CreditRequest")
+                        .WithOne("Credit")
+                        .HasForeignKey("ShopFinance.Domain.Entities.Credit", "CreditRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ShopFinance.Domain.Entities.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
@@ -1355,9 +2101,57 @@ namespace ShopFinance.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ShopFinance.Domain.Entities.Quotation", "Quotation")
+                        .WithMany()
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreditRequest");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Frequency");
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.CreditRequest", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.PhaseState", "PhaseState")
+                        .WithMany()
+                        .HasForeignKey("PhaseStateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.Quotation", "Quotation")
+                        .WithOne()
+                        .HasForeignKey("ShopFinance.Domain.Entities.CreditRequest", "QuotationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PhaseState");
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.CreditRequestPhase", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.CreditRequest", "CreditRequest")
+                        .WithMany("Phases")
+                        .HasForeignKey("CreditRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.PhaseState", "PhaseState")
+                        .WithMany()
+                        .HasForeignKey("PhaseStateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreditRequest");
+
+                    b.Navigation("PhaseState");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Movement", b =>
@@ -1432,6 +2226,17 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Navigation("Payment");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.PhaseState", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Phase", "Phase")
+                        .WithMany("States")
+                        .HasForeignKey("PhaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Phase");
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Product", b =>
                 {
                     b.HasOne("ShopFinance.Domain.Entities.Category", "Category")
@@ -1441,6 +2246,139 @@ namespace ShopFinance.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Quotation", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Frequency", null)
+                        .WithMany("Quotations")
+                        .HasForeignKey("FrequencyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.Order", "Order")
+                        .WithOne("Quotation")
+                        .HasForeignKey("ShopFinance.Domain.Entities.Quotation", "OrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ShopFinance.Domain.Entities.QuotationPlan", "QuotationPlan")
+                        .WithMany()
+                        .HasForeignKey("QuotationPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("QuotationPlan");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationAdditionalCost", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Quotation", "Quotation")
+                        .WithMany("AdditionalCosts")
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationAmortizationScheduleEntry", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Quotation", "Quotation")
+                        .WithMany("AmortizationScheduleEntries")
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationDiscount", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Quotation", "Quotation")
+                        .WithMany("Discounts")
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlan", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.TaxRate", "TaxRate")
+                        .WithMany("QuotationPlans")
+                        .HasForeignKey("TaxRateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("TaxRate");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlanFrequency", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Frequency", "Frequency")
+                        .WithMany("QuotationPlanFrequencies")
+                        .HasForeignKey("FrequencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.QuotationPlan", "QuotationPlan")
+                        .WithMany("Frequencies")
+                        .HasForeignKey("QuotationPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Frequency");
+
+                    b.Navigation("QuotationPlan");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlanPaymentTerm", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.InterestRate", "InterestRate")
+                        .WithMany("QuotationPlanPaymentTerms")
+                        .HasForeignKey("InterestRateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.PaymentTerm", "PaymentTerm")
+                        .WithMany("QuotationPlanPaymentTerms")
+                        .HasForeignKey("PaymentTermId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.QuotationPlan", "QuotationPlan")
+                        .WithMany("PaymentTerms")
+                        .HasForeignKey("QuotationPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InterestRate");
+
+                    b.Navigation("PaymentTerm");
+
+                    b.Navigation("QuotationPlan");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlanPhase", b =>
+                {
+                    b.HasOne("ShopFinance.Domain.Entities.Phase", "Phase")
+                        .WithMany()
+                        .HasForeignKey("PhaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShopFinance.Domain.Entities.QuotationPlan", "QuotationPlan")
+                        .WithMany("Phases")
+                        .HasForeignKey("QuotationPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Phase");
+
+                    b.Navigation("QuotationPlan");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Sale", b =>
@@ -1627,14 +2565,32 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Navigation("Payments");
                 });
 
+            modelBuilder.Entity("ShopFinance.Domain.Entities.CreditRequest", b =>
+                {
+                    b.Navigation("Credit");
+
+                    b.Navigation("Phases");
+                });
+
             modelBuilder.Entity("ShopFinance.Domain.Entities.Frequency", b =>
                 {
                     b.Navigation("Credits");
+
+                    b.Navigation("QuotationPlanFrequencies");
+
+                    b.Navigation("Quotations");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.InterestRate", b =>
+                {
+                    b.Navigation("QuotationPlanPaymentTerms");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Quotation");
 
                     b.Navigation("Sale");
                 });
@@ -1642,6 +2598,16 @@ namespace ShopFinance.Infrastructure.Migrations
             modelBuilder.Entity("ShopFinance.Domain.Entities.Payment", b =>
                 {
                     b.Navigation("PaymentApplications");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.PaymentTerm", b =>
+                {
+                    b.Navigation("QuotationPlanPaymentTerms");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Phase", b =>
+                {
+                    b.Navigation("States");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Product", b =>
@@ -1659,6 +2625,24 @@ namespace ShopFinance.Infrastructure.Migrations
                     b.Navigation("StockTransferItems");
 
                     b.Navigation("WarehouseProducts");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.Quotation", b =>
+                {
+                    b.Navigation("AdditionalCosts");
+
+                    b.Navigation("AmortizationScheduleEntries");
+
+                    b.Navigation("Discounts");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.QuotationPlan", b =>
+                {
+                    b.Navigation("Frequencies");
+
+                    b.Navigation("PaymentTerms");
+
+                    b.Navigation("Phases");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Role", b =>
@@ -1679,6 +2663,11 @@ namespace ShopFinance.Infrastructure.Migrations
             modelBuilder.Entity("ShopFinance.Domain.Entities.StockTransfer", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ShopFinance.Domain.Entities.TaxRate", b =>
+                {
+                    b.Navigation("QuotationPlans");
                 });
 
             modelBuilder.Entity("ShopFinance.Domain.Entities.Warehouse", b =>

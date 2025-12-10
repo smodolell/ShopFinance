@@ -6,6 +6,8 @@ public interface ISelectListService
 {
     Task<List<SelectListItemDto>> ProductState();
     Task<List<SelectListItemDto>> Categories();
+    Task<List<SelectListItemDto>> Warehouses();
+    Task<List<SelectListItemDto>> Phases();
 
 
 }

@@ -1,0 +1,223 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Services.PaymentTerms
+@using ShopFinance.Application.Services.PaymentTerms.DTOs
+@inject IPaymentTermService _paymentTermService
+@inject ISnackbar _snackbarService
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="SaveSubmit" id="paymentTermForm">
+            <FluentValidationValidator @ref="_fluentValidationValidator" />
+
+            <MudGrid Spacing="2">
+                <!-- Nombre -->
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Nombre *"
+                                  @bind-Value="_model.Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Name)"
+                                  HelperText="Ej: 3 Meses, 6 Meses, 12 Meses">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Código -->
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Código *"
+                                  @bind-Value="_model.Code"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Code)"
+                                  HelperText="Mayúsculas, números y guiones bajos (ej: TERM_3, TERM_6)">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Número de Meses -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField Label="Número de Meses *"
+                                     @bind-Value="_model.NumberOfPayments"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Required="true"
+                                     Immediate="true"
+                                     Min="1"
+                                     Max="120"
+                                     For="@(() => _model.NumberOfPayments)"
+                                     HelperText="Plazo(1-120 meses / 10 años)">
+                    </MudNumericField>
+                </MudItem>
+
+
+                <!-- Estado Activo -->
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_model.IsActive"
+                               Label="Plazo Activo"
+                               Color="Color.Primary" />
+                </MudItem>
+
+                <!-- Información calculada -->
+                @if (_model.NumberOfPayments> 0)
+                {
+                    <MudItem xs="12">
+                        @{
+                            var approximateDays = _model.NumberOfPayments* 30;
+                            var years = _model.NumberOfPayments/ 12;
+                            var remainingMonths = _model.NumberOfPayments% 12;
+                            var description = "";
+
+                            if (years > 0)
+                                description += $"{years} año{(years > 1 ? "s" : "")}";
+
+                            if (remainingMonths > 0)
+                            {
+                                if (years > 0) description += " y ";
+                                description += $"{remainingMonths} mes{(remainingMonths > 1 ? "es" : "")}";
+                            }
+                        }
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Elevation="0">
+                            <MudText>Información calculada:</MudText>
+                            <MudText>• Días aproximados: <strong>@approximateDays</strong> días (@_model.NumberOfPayments× 30)</MudText>
+                            <MudText>• Equivalencia: <strong>@description</strong></MudText>
+                            @if (_model.NumberOfPayments> 36)
+                            {
+                                <MudText Class="mt-1"><small>Nota: Plazo superior a 3 años</small></MudText>
+                            }
+                        </MudAlert>
+                    </MudItem>
+                }
+
+                <!-- Sugerencias de plazos comunes -->
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Text" Elevation="0" Dense="true">
+                        <MudText Typo="Typo.body2"><strong>Plazos comunes:</strong></MudText>
+                        <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap" Justify="Justify.FlexStart" Class="mt-1">
+                            @foreach (var months in new[] { 1, 3, 6, 12, 18, 24, 36 })
+                            {
+                                <MudChip T="int" Color="Color.Primary" Variant="Variant.Filled"
+                                         OnClick="@(() => SetCommonMonths(months))"
+                                         Class="ma-1">
+                                    @months mes@(months != 1 ? "es" : "")
+                                </MudChip>
+                            }
+                        </MudStack>
+                    </MudAlert>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="SaveSubmit"
+                   Disabled="_isSaving">
+            @(_isSaving ? "Guardando..." : "Guardar")
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="@(() => Cancel())">
+            Cancelar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance? MudDialog { get; set; }
+    [Parameter] public int PaymentTermId { get; set; }
+
+    private FluentValidationValidator? _fluentValidationValidator;
+    private PaymentTermEditDto _model = new PaymentTermEditDto();
+    private bool _isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (PaymentTermId > 0)
+        {
+            await LoadPaymentTerm();
+        }
+        else
+        {
+            // Valores por defecto para nuevo plazo
+            _model.IsActive = true;
+            _model.NumberOfPayments= 12; // Valor común por defecto
+        }
+    }
+
+    private async Task LoadPaymentTerm()
+    {
+        try
+        {
+            var result = await _paymentTermService.GetById(PaymentTermId);
+            if (result.IsSuccess)
+            {
+                _model = result.Value;
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al cargar el plazo", Severity.Error);
+                Cancel();
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+            Cancel();
+        }
+    }
+
+    private async Task SaveSubmit()
+    {
+        if (_isSaving) return;
+
+        var isValid = await _fluentValidationValidator!.ValidateAsync();
+        if (!isValid) return;
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _paymentTermService.Save(_model);
+
+            if (result.IsSuccess)
+            {
+                var message = PaymentTermId == 0
+                    ? "Plazo de pago creado exitosamente"
+                    : "Plazo de pago actualizado exitosamente";
+
+                _snackbarService.Add(message, Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al guardar", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetCommonMonths(int months)
+    {
+        _model.NumberOfPayments= months;
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+}

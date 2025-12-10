@@ -11,4 +11,11 @@ public interface IPaginator
         CancellationToken cancellationToken = default)
         where T : class
         where TDestination : class;
+
+    PagedResult<List<T>> CreatePagedResult<T>(
+        List<T> items,
+        int pageNumber,
+        int pageSize,
+        long totalCount)
+        where T : class;
 }

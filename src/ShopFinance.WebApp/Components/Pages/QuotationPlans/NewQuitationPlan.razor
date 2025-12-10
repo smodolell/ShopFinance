@@ -1,0 +1,569 @@
+﻿@attribute [Route(PageRoute.NewQuotationPlan)]
+@attribute [AccessPoint(AppMenu.MenuConfiguracion, "Nuevo Plan de Cotización", AccessPointType.Page)]
+@using ShopFinance.Application.Features.Products.Commands
+@using ShopFinance.Application.Features.Products.DTOs
+@using ShopFinance.Application.Features.QuotationPlans.Commands
+@using ShopFinance.Application.Features.QuotationPlans.DTOs
+@using ShopFinance.Application.Features.Phases.DTOs
+@using ShopFinance.Application.Features.QuotationPlans.Queries
+@using ShopFinance.Application.Features.Phases.Queries
+@using ShopFinance.Domain.Entities
+@inject ISelectListService _selectListService
+
+<PageHeader Title="Editar Plan de Cotización" Icon="@AppMenu.MenuConfiguracionIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+@if (_isLoading)
+{
+    <MudGrid>
+        <MudItem xs="12" Class="text-center py-8">
+            <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+            <MudText Typo="Typo.body1" Class="mt-2">Cargando plan de cotización...</MudText>
+        </MudItem>
+    </MudGrid>
+}
+else if (_model == null)
+{
+    <MudGrid>
+        <MudItem xs="12" Class="text-center py-8">
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" />
+            <MudText Typo="Typo.h6" Class="mt-2">Plan de cotización no encontrado</MudText>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       OnClick="NavigateToList"
+                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                       Class="mt-4">
+                Volver a la lista
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <EditForm Model="_model" OnValidSubmit="HandleValidSubmit" id="editQuotationPlanForm">
+        <FluentValidationValidator @ref="_fluentValidationValidator" />
+        <DataAnnotationsValidator />
+        <ValidationSummary></ValidationSummary>
+        <MudGrid Spacing="2">
+            <!-- Información básica del plan -->
+            <MudItem xs="12" sm="12" md="12">
+                <MudPaper Elevation="1" Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-3">Información Básica</MudText>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_model.PlanName"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Label="Nombre del Plan"
+                                          For="@(() => _model.PlanName)"
+                                          Disabled="_isSubmitting"
+                                          HelperText="Nombre único del plan de cotización">
+                            </MudTextField>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <ReadOnlyField Value="@_quotationPlanId" Label="ID del Plan"></ReadOnlyField>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudDatePicker @bind-Date="_model.InitialEffectiveDate"
+                                           Label="Fecha de Inicio Vigencia"
+                                           Margin="Margin.Dense"
+                                           Variant="Variant.Outlined"
+                                           Disabled="_isSubmitting"
+                                           PickerVariant="PickerVariant.Dialog" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudDatePicker @bind-Date="_model.FinalEffectiveDate"
+                                           Label="Fecha de Fin Vigencia"
+                                           Margin="Margin.Dense"
+                                           Variant="Variant.Outlined"
+                                           Disabled="_isSubmitting"
+                                           PickerVariant="PickerVariant.Dialog" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudChip T="bool" Size="Size.Small"
+                                     Color="@(_model.Active ? Color.Success : Color.Error)"
+                                     Variant="Variant.Filled"
+                                     Class="mt-2">
+                                @(_model.Active ? "Activo" : "Inactivo")
+                            </MudChip>
+                            <MudText Typo="Typo.caption" Color="Color.Default" Class="mt-1">
+                                El plan estará activo desde @_model.InitialEffectiveDate?.ToString("dd/MM/yyyy") hasta @_model.FinalEffectiveDate?.ToString("dd/MM/yyyy")
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Configuración de Fases -->
+            <MudItem xs="12" sm="12" md="12">
+                <MudPaper Elevation="1" Class="pa-4">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                        <MudText Typo="Typo.h6">Configuración de Fases</MudText>
+                        <MudTooltip Text="Agregar Fase">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           OnClick="AddPhase"
+                                           Disabled="_isSubmitting" />
+                        </MudTooltip>
+                    </MudStack>
+
+                    <MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
+                        Seleccione las fases inicial y final que conformarán este plan de cotización.
+                    </MudText>
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudSelect T="int?"
+                                       @bind-Value="_model.PhaseIdInitial"
+                                       Label="Seleccionar Fase Inicial"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       HelperText="Seleccione la fase inicial del Plan">
+                                @if (_phasesListInitial != null)
+                                {
+                                    @foreach (var phase in _phasesListInitial)
+                                    {
+                                        <MudSelectItem T="int?" Value="@phase.Id">
+
+                                            @phase.PhaseName
+
+                                        </MudSelectItem>
+                                    }
+                                }
+
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudSelect T="int?"
+                                       @bind-Value="_model.PhaseIdFinal"
+                                       Label="Seleccionar Fase Final"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       HelperText="Seleccione la fase final del Plan">
+                                @if (_phasesListFinal != null)
+                                {
+                                    @foreach (var phase in _phasesListFinal)
+                                    {
+                                        <MudSelectItem T="int?" Value="@phase.Id">@phase.PhaseName</MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+
+
+                    @if (_phasesList == null || !_phasesList.Any())
+                    {
+                        <MudAlert Severity="Severity.Info" Elevation="1">
+                            <MudText>No hay fases disponibles</MudText>
+                            Primero debe crear fases en el sistema para poder asignarlas al plan.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Default" Class="mb-4">
+                            Seleccione las fases restantes que formarán parte del plan de cotización y su estado (activo/inactivo).
+                        </MudText>
+                        <MudTable Items="_model.Phases" Dense="true" Bordered="true" Hover="true" Striped="true" Elevation="1">
+                            <HeaderContent>
+                                <MudTh Style="width: 20px">Orden</MudTh>
+                                <MudTh>Fase</MudTh>
+                                <MudTh>Estado</MudTh>
+                                <MudTh>Activa</MudTh>
+                            </HeaderContent>
+                            <RowTemplate Context="phaseItem">
+                                <MudTd DataLabel="Orden">
+                                    @phaseItem.Order
+                                </MudTd>
+                                <MudTd DataLabel="Fase">
+                                    <MudText Typo="Typo.body2">@phaseItem.PhaseName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @if (phaseItem.IsInitial)
+                                        {
+                                            <MudBadge Color="Color.Success" Dot="true">Inicial</MudBadge>
+                                        }
+                                        @if (phaseItem.IsFinal)
+                                        {
+                                            <MudBadge Color="Color.Info" Dot="true" Class="ml-1">Final</MudBadge>
+                                        }
+                                        @if (phaseItem.Required)
+                                        {
+                                            <MudBadge Color="Color.Warning" Dot="true" Class="ml-1">Requerida</MudBadge>
+                                        }
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Estado">
+                                    @if (phaseItem.Active)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">
+                                            Activa
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">
+                                            Inactiva
+                                        </MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Activa">
+                                    <MudSwitch T="bool" @bind-Value="phaseItem.Active"
+                                               ThumbIcon="@(phaseItem.Active==true ? Icons.Material.Filled.Done : Icons.Material.Filled.Close)"
+                                               ThumbIconColor="@(phaseItem.Active==true ? Color.Success : Color.Error)"
+                                               Disabled="@(_isSubmitting || phaseItem.Required)">
+                                    </MudSwitch>
+
+                                </MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager />
+                            </PagerContent>
+                            <NoRecordsContent>
+                                <MudText Align="Align.Center" Class="py-4">
+                                    No hay fases asignadas al plan
+                                </MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <!-- Resumen y acciones -->
+            <MudItem xs="12">
+                <MudPaper Elevation="1" Class="pa-4 mt-4">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">Resumen</MudText>
+                            <MudList T="string" Dense="true">
+                                <MudListItem Icon="@Icons.Material.Filled.CheckCircle">
+                                    <MudText Typo="Typo.body2">Fases activas: @_activePhasesCount</MudText>
+                                </MudListItem>
+                                <MudListItem Icon="@Icons.Material.Filled.CalendarToday">
+                                    <MudText Typo="Typo.body2">Vigencia: @_model.InitialEffectiveDate?.ToString("dd/MM/yyyy") - @_model.FinalEffectiveDate?.ToString("dd/MM/yyyy")</MudText>
+                                </MudListItem>
+                                <MudListItem Icon="@Icons.Material.Filled.Info" IconColor="@(_model.Active ? Color.Success : Color.Warning)">
+                                    <MudText Typo="Typo.body2">Estado: @(_model.Active ? "Activo" : "Inactivo")</MudText>
+                                </MudListItem>
+                            </MudList>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Color="Color.Default" Class="mb-2">
+                                Los campos marcados con * son obligatorios.
+                                El plan debe tener al menos una fase activa para poder ser utilizado.
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudDivider Class="my-2" />
+                            <MudStack Justify="Justify.FlexEnd" Spacing="2" Row="true">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Default"
+                                           OnClick="NavigateToList"
+                                           Disabled="_isSubmitting"
+                                           StartIcon="@Icons.Material.Filled.ArrowBack">
+                                    Cancelar
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           ButtonType="ButtonType.Submit"
+                                           form="editQuotationPlanForm"
+                                           Disabled="_isSubmitting || _model.Phases.Count == 0"
+                                           StartIcon="@Icons.Material.Filled.Save"
+                                           EndIcon="@(_isSubmitting ? Icons.Material.Filled.HourglassEmpty : null)">
+                                    @(_isSubmitting ? "Guardando..." : "Guardar Cambios")
+                                </MudButton>
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+
+<!-- Dialogo para agregar fase -->
+<MudDialog Visible="_showAddPhaseDialog" Options="_dialogOptions">
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-3">Agregar Fase al Plan</MudText>
+
+        @if (_availablePhases == null || !_availablePhases.Any())
+        {
+            <MudAlert Severity="Severity.Info">
+                No hay fases disponibles para agregar. Todas las fases ya están asignadas al plan.
+            </MudAlert>
+        }
+        else
+        {
+            <MudSelect T="int?"
+                       @bind-Value="_selectedPhaseId"
+                       Label="Seleccionar Fase"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       HelperText="Seleccione una fase para agregar al plan">
+                @foreach (var phase in _availablePhases)
+                {
+                    <MudSelectItem T="int?" Value="@phase.Id">
+                        @if (phase.IsInitial)
+                        {
+                            <MudBadge Color="Color.Success" Dot="true">@phase.PhaseName</MudBadge>
+                        }
+                        @if (phase.IsFinal)
+                        {
+                            <MudBadge Color="Color.Info" Dot="true">@phase.PhaseName</MudBadge>
+                        }
+                        else
+                        {
+                            @phase.PhaseName
+                        }
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAddPhaseDialog" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton OnClick="ConfirmAddPhase"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="_selectedPhaseId == null">
+            Agregar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+
+    #region Fields
+    private CreateOrUpdateQuotationPlanCommand _model = new();
+    private FluentValidationValidator? _fluentValidationValidator;
+    private List<PhaseListItemDto>? _phasesList;
+    private List<PhaseListItemDto>? _phasesListInitial;
+    private List<PhaseListItemDto>? _phasesListFinal;
+    private List<PhaseListItemDto>? _availablePhases;
+    private bool _isLoading = true;
+    private bool _isSubmitting = false;
+    private bool _showAddPhaseDialog = false;
+    private int? _selectedPhaseId = null;
+    private int _quotationPlanId;
+    private int _activePhasesCount => _model.Phases?.Count(p => p.Active) ?? 0;
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+    #endregion
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Planes de Cotización", href: "/quotation-plans"),
+        new BreadcrumbItem("Editar Plan", href: null, disabled: true)
+    };
+    #endregion
+
+    #region Lifecycle Methods
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+
+    #endregion
+
+    #region Data Methods
+    private async Task LoadData()
+    {
+        try
+        {
+            _isLoading = true;
+            StateHasChanged();
+
+            // Cargar lista de fases disponibles
+            if (_phasesList == null)
+            {
+                _phasesList = await _queryMediator.QueryAsync(new GetPhasesListQuery { IsInitial = false, IsFinal = false });
+                _model.Phases = _phasesList.Select(p => new QuotationPlanPhaseCommand
+                {
+                    PhaseId = p.Id,
+                    PhaseName = p.PhaseName,
+                    IsFinal = p.IsFinal,
+                    IsInitial = p.IsInitial,
+                    Order = p.Order,
+                    Required = p.Required,
+                    Active = p.Required
+                }).ToList();
+            }
+            if (_phasesListInitial == null)
+            {
+                _phasesListInitial = await _queryMediator.QueryAsync(new GetPhasesListQuery { IsInitial = true });
+                if (_phasesListInitial.Count == 1)
+                {
+                    _model.PhaseIdInitial = _phasesListInitial[0].Id;
+                }
+            }
+            if (_phasesListFinal == null)
+            {
+                _phasesListFinal = await _queryMediator.QueryAsync(new GetPhasesListQuery { IsFinal = true });
+                if (_phasesListFinal.Count == 1)
+                {
+                    _model.PhaseIdFinal = _phasesListFinal[0].Id;
+                }
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error al cargar datos: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void UpdateAvailablePhases()
+    {
+        if (_phasesList == null) return;
+
+        var assignedPhaseIds = _model.Phases.Select(p => p.PhaseId).ToList();
+        _availablePhases = _phasesList
+            .Where(p => !assignedPhaseIds.Contains(p.Id))
+            .ToList();
+    }
+    #endregion
+
+    #region UI Handlers
+    private async Task HandleValidSubmit()
+    {
+        if (_isSubmitting) return;
+
+        if (!await ValidateFormAsync())
+            return;
+
+        await UpdateQuotationPlanAsync();
+    }
+
+    private async Task<bool> ValidateFormAsync()
+    {
+        if (_fluentValidationValidator != null)
+        {
+            var isValid = await _fluentValidationValidator.ValidateAsync(options =>
+            {
+                options.IncludeAllRuleSets();
+            });
+
+            if (!isValid)
+            {
+                _snackbarService.Add("Por favor, corrige los errores del formulario", Severity.Warning);
+                return false;
+            }
+        }
+
+        // Validación adicional: al menos una fase activa
+        if (_model.Phases.Count == 0)
+        {
+            _snackbarService.Add("Debe agregar al menos una fase al plan", Severity.Warning);
+            return false;
+        }
+
+        if (!_model.Phases.Any(p => p.Active))
+        {
+            _snackbarService.Add("Debe tener al menos una fase activa", Severity.Warning);
+            return false;
+        }
+
+
+        return true;
+    }
+
+    private void AddPhase()
+    {
+        UpdateAvailablePhases();
+
+        if (_availablePhases == null || !_availablePhases.Any())
+        {
+            _snackbarService.Add("No hay fases disponibles para agregar", Severity.Info);
+            return;
+        }
+
+        _selectedPhaseId = null;
+        _showAddPhaseDialog = true;
+    }
+
+    private void CloseAddPhaseDialog()
+    {
+        _showAddPhaseDialog = false;
+        _selectedPhaseId = null;
+    }
+
+    private void ConfirmAddPhase()
+    {
+        if (_selectedPhaseId.HasValue && _phasesList != null)
+        {
+            var selectedPhase = _phasesList.FirstOrDefault(p => p.Id == _selectedPhaseId.Value);
+            if (selectedPhase != null)
+            {
+                // Agregar la fase al modelo
+                _model.Phases.Add(new QuotationPlanPhaseCommand
+                {
+                    PhaseId = selectedPhase.Id,
+                    PhaseName = selectedPhase.PhaseName,
+                    IsFinal = selectedPhase.IsFinal,
+                    IsInitial = selectedPhase.IsInitial,
+                    Order = selectedPhase.Order,
+                    Required = selectedPhase.Required,
+                    Active = true // Por defecto activa
+                });
+
+                StateHasChanged();
+            }
+        }
+
+        CloseAddPhaseDialog();
+    }
+
+
+    #endregion
+
+    #region CRUD Operations
+    private async Task UpdateQuotationPlanAsync()
+    {
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _commandMediator.SendAsync(_model);
+
+            if (result.IsSuccess)
+            {
+                _snackbarService.Add(
+                    result.SuccessMessage ?? "Plan de cotización actualizado exitosamente",
+                    Severity.Success);
+
+                await Task.Delay(1000); // Pequeño delay para mostrar el mensaje
+                NavigateToList();
+            }
+            else
+            {
+                var errorMessage = result.Errors?.FirstOrDefault() ?? "Error al actualizar el plan de cotización";
+                _snackbarService.Add(errorMessage, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error inesperado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateToList()
+    {
+        _navManager.NavigateTo("." + PageRoute.QuotationPlans);
+    }
+    #endregion
+
+}

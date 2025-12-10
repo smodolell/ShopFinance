@@ -1,0 +1,10 @@
+﻿@attribute [Route(PageRoute.Formalization + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Formalización", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.Formalization, "Formalización", 7,IsRequired = true)]
+
+<h3>Formalization</h3>
+
+@code {
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}

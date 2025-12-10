@@ -1,4 +1,6 @@
-﻿namespace ShopFinance.Domain.Entities;
+﻿using ShopFinance.Domain.Enums;
+
+namespace ShopFinance.Domain.Entities;
 
 public class StockAlert : BaseEntity<Guid>
 {

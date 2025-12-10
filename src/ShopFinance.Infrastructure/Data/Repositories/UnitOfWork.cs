@@ -36,6 +36,25 @@ public class UnitOfWork : IUnitOfWork
     public IStockTransferRepository StockTransfers { get; }
 
     public IWarehouseRepository Warehouses { get; }
+
+    public IQuotationRepository Quotations { get; }
+
+    public IQuotationPlanRepository QuotationPlans { get; }
+
+    public IPhaseRepository Phases { get; }
+
+    public ICreditRequestRepository CreditRequests { get; }
+
+    public IInterestRateRepository InterestRates { get; }
+
+    public IQuotationPlanPaymentTermRepository QuotationPlanPaymentTerms { get; }
+
+    public IQuotationPlanFrequencyRepository QuotationPlanFrequencies { get; }
+
+    public ITaxRateRepository TaxRates { get; }
+
+    public IPaymentTermRepository PaymentTerms { get; }
+
     public UnitOfWork(ApplicationDbContext context, UserManager<User> userManager, RoleManager<Role> roleManager, SignInManager<User> signInManager)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -45,8 +64,8 @@ public class UnitOfWork : IUnitOfWork
         Customers = new CustomerRepository(context);
         Frequencies = new FrequencyRepository(_context);
         Settings = new SettingRepository(_context);
-        Roles = new RoleRepository(context,roleManager);
-        Users = new UserRepository(context, userManager,signInManager);
+        Roles = new RoleRepository(context, roleManager);
+        Users = new UserRepository(context, userManager, signInManager);
         Orders = new OrderRepository(context);
         Sales = new SaleRepository(context);
         OrderItems = new OrderItemRepository(context);
@@ -54,6 +73,15 @@ public class UnitOfWork : IUnitOfWork
         WarehouseProducts = new WarehouseProductRepository(context);
         StockTransfers = new StockTransferRepository(context);
         Warehouses = new WarehouseRepository(context);
+        Quotations = new QuotationRepository(context);
+        Phases = new PhaseRepository(context);
+        QuotationPlans = new QuotationPlanRepository(context);
+        CreditRequests = new CreditRequestRepository(context);
+        InterestRates = new InterestRateRepository(context);
+        QuotationPlanPaymentTerms = new QuotationPlanPaymentTermRepository(context);
+        QuotationPlanFrequencies = new QuotationPlanFrequencyRepository(context);
+        TaxRates = new TaxRateRepository(context);
+        PaymentTerms = new PaymentTermRepository(context);
     }
 
     public async Task BeginTransactionAsync()

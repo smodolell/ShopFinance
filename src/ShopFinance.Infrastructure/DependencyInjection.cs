@@ -13,6 +13,7 @@ using ShopFinance.Domain.Common.Interfaces;
 using ShopFinance.Domain.Entities;
 using ShopFinance.Domain.Repositories;
 using ShopFinance.Domain.Services;
+using ShopFinance.Domain.Services.Implementations;
 using ShopFinance.Infrastructure.Authentication;
 using ShopFinance.Infrastructure.Data;
 using ShopFinance.Infrastructure.Data.Initializers;
@@ -77,6 +78,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
 
+
+        services.AddScoped<IWarehouseSelectorService, PhysicalStoreWarehouseSelector>();
         services.AddScoped<IStockService, StockService>();
 
         // 10. Health Checks
@@ -86,6 +89,7 @@ public static class DependencyInjection
         // 11. Servicios Inicializadores
         services.AddHostedService<UserInitializer>();
         services.AddHostedService<JwtBearerInitializer>();
+        services.AddHostedService<SyncPhasesInitializer>();
 
         return services;
     }

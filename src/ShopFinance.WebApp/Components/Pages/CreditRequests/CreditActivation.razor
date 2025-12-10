@@ -1,0 +1,10 @@
+﻿@attribute [Route(PageRoute.CreditActivation + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Activación de Crédito", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.CreditActivation, "Activación de Crédito", 9, IsFinal = true)]
+
+<h3>CreditActivation</h3>
+
+@code {
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}

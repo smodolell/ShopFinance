@@ -1,0 +1,7 @@
+﻿@attribute [Route(PageRoute.Frequencies)]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Frecuencia de Pagos")]
+@rendermode RenderMode.InteractiveServer
+@using ShopFinance.WebApp.Components.Pages.Frequencies.Com
+
+<PageHeader Title="Frecuencia de Pagos" Icon="@AppMenu.MenuCatalogIcon" />
+<FrequencyList></FrequencyList>

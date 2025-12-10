@@ -1,4 +1,5 @@
 using ShopFinance.Domain.Repositories;
+using ShopFinance.Domain.Repositories;
 
 namespace ShopFinance.Domain.Common.Interfaces;
 
@@ -17,9 +18,17 @@ public interface IUnitOfWork : IDisposable
     ISaleRepository Sales { get; }
     IStockMovementRepository StockMovements { get; }
     IWarehouseProductRepository WarehouseProducts { get; }
-    IStockTransferRepository StockTransfers{ get; }
+    IStockTransferRepository StockTransfers { get; }
     IWarehouseRepository Warehouses { get; }
-
+    IQuotationRepository Quotations { get; }
+    IQuotationPlanRepository QuotationPlans { get; }
+    IPhaseRepository Phases { get; }
+    ICreditRequestRepository CreditRequests { get; }
+    IInterestRateRepository InterestRates { get; }
+    IQuotationPlanPaymentTermRepository QuotationPlanPaymentTerms { get; }
+    IQuotationPlanFrequencyRepository QuotationPlanFrequencies { get; }
+    ITaxRateRepository TaxRates { get; }
+    IPaymentTermRepository PaymentTerms { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync();
     Task CommitAsync();

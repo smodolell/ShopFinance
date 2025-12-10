@@ -17,6 +17,8 @@ public static class AppMenu
     public const string MenuSystemIcon = Icons.Material.Filled.SettingsApplications;
 
 
+    public const string MenuWarehouse = "Almacen";
+    public const string MenuWarehouseIcon = Icons.Material.Filled.Warehouse;
 
 
 
@@ -37,7 +39,7 @@ public static class AppMenu
     public const string MenuCustomersIcon = Icons.Material.Filled.PeopleOutline;
 
 
-    public const string MenuSales = "Sales";
+    public const string MenuSales = "Ventas";
     public const string MenuSalesIcon = Icons.Material.Filled.PointOfSale;
 
 
@@ -58,9 +60,7 @@ public static class AppMenu
     public const string MenuPortalCliente = "Portal Cliente";
     public const string MenuPortalClienteIcon = Icons.Material.Filled.PeopleOutline;
 
-    public const string MenuTest = "Test";
-    public const string MenuTestIcon = Icons.Material.Filled.ListAlt;
-
+  
     public const string MenuGeneral = "General";
     public const string MenuGeneralIcon = Icons.Material.Filled.Dashboard;
 

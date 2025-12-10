@@ -1,0 +1,7 @@
+﻿@attribute [Route(PageRoute.InterestRates)]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Tasas")]
+@rendermode RenderMode.InteractiveServer
+@using ShopFinance.WebApp.Components.Pages.InterestRates.Com
+
+<PageHeader Title="Tasas" Icon="@AppMenu.MenuCatalogIcon" />
+<InterestRateList></InterestRateList>

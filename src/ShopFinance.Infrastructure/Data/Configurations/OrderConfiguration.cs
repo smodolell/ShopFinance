@@ -51,6 +51,12 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasForeignKey<Sale>(x => x.OrderId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(o => o.Quotation)
+         .WithOne(q => q.Order)
+         .HasForeignKey<Quotation>(q => q.OrderId) // Quotation tiene la FK
+         .OnDelete(DeleteBehavior.SetNull)
+         .IsRequired(false);
+
         // Índices
         builder.HasIndex(x => x.OrderNumber)
             .IsUnique();

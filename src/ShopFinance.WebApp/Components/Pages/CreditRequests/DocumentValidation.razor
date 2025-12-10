@@ -1,0 +1,10 @@
+﻿@attribute [Route(PageRoute.DocumentValidation + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Validación de Documentación", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.DocumentValidation, "Validación de Documentación", 6)]
+
+<h3>DocumentValidation</h3>
+
+@code {
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}

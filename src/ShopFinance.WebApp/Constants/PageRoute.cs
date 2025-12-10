@@ -35,15 +35,37 @@ internal static class PageRoute
     public const string DetailSale = Prefix + "detail_sale";
 
    public const string Warehouses = Prefix + "warehouses";
+   public const string StockMovements = Prefix + "movements";
 
     public const string Settings = Prefix + "settings";
-    public const string NewTodo = Prefix + "new_todo";
-    public const string EditTodo = Prefix + "edit_todo";
+
+
+    public const string Applicant = Prefix + "applicant";
+    public const string Questionnaire = Prefix + "questionnaire";
+    public const string Quotation = Prefix + "quotation";
+    public const string Scoring = Prefix + "scoring";
+    public const string Documentation = Prefix + "documentation";
+    public const string DocumentValidation = Prefix + "document_validation";
+    public const string Formalization = Prefix + "formalization";
+    public const string ResourceDelivery = Prefix + "resource_delivery";
+    public const string CreditActivation = Prefix + "credit_activation";
 
 
 
 
-    public const string Issues = Prefix + "issues";
+    public const string QuotationPlans = Prefix + "quotation_plans";
+    public const string EditQuotationPlan = Prefix + "edit_quotation_plan";
+    public const string NewQuotationPlan = Prefix + "new_quotation_plan";
+
+
+    public const string Phases = Prefix + "phases";
+    public const string DetailPhase = Prefix + "phases/detail";
+
+    public const string InterestRates = Prefix + "interest_rates";
+    public const string Frequencies = Prefix + "frequencies";
+    public const string PaymentTerms = Prefix + "payment_terms";
+
+
 
     public const string AdminEmpresa = Prefix + "home";
     public const string Login = "/login";

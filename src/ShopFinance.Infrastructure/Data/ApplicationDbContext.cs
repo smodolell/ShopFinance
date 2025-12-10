@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using ShopFinance.Domain.Common.Interfaces;
 using ShopFinance.Domain.Entities;
 using System.Linq.Expressions;
@@ -8,16 +10,29 @@ namespace ShopFinance.Infrastructure.Data;
 
 public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
 {
+    public DbSet<AmortizationScheduleEntry> AmortizationSchedules { get; set; } = default!;
     public DbSet<Category> Categories { get; set; } = default!;
     public DbSet<Credit> Credits { get; set; } = default!;
+    public DbSet<CreditRequest> CreditRequests { get; set; } = default!;
+    public DbSet<CreditRequestPhase> CreditRequestPhases { get; set; } = default!;
     public DbSet<Customer> Customers { get; set; } = default!;
     public DbSet<Frequency> Frequencies { get; set; } = default!;
+    public DbSet<InterestRate> InterestRates { get; set; } = default!;
     public DbSet<Movement> Movements { get; set; } = default!;
     public DbSet<Order> Orders { get; set; } = default!;
     public DbSet<OrderItem> OrderItems { get; set; } = default!;
     public DbSet<Payment> Payments { get; set; } = default!;
     public DbSet<PaymentApplication> PaymentApplications { get; set; } = default!;
+    public DbSet<PaymentTerm> PaymentTerms { get; set; } = default!;
     public DbSet<Product> Products { get; set; } = default!;
+    public DbSet<Quotation> Quotations { get; set; } = default!;
+    public DbSet<QuotationAdditionalCost> QuotationAdditionalCosts{ get; set; } = default!;
+    public DbSet<QuotationAmortizationScheduleEntry> QuotationAmortizationSchedules { get; set; } = default!;
+    public DbSet<QuotationDiscount> QuotationDiscounts { get; set; } = default!;
+    public DbSet<QuotationPlan> QuotationPlans { get; set; } = default!;
+    public DbSet<QuotationPlanFrequency> QuotationPlanFrequencies { get; set; } = default!;
+    public DbSet<QuotationPlanPaymentTerm> QuotationPlanPaymentTerms { get; set; } = default!;
+    public DbSet<QuotationPlanPhase> QuotationPlanPhases { get; set; } = default!;
     public DbSet<Sale> Sales { get; set; } = default!;
     public DbSet<SaleItem> SaleItems { get; set; } = default!;
     public DbSet<Setting> Settings { get; set; } = default!;
@@ -27,6 +42,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<StockMovement> StockMovements { get; set; } = default!;
     public DbSet<StockTransfer> StockTransfers { get; set; } = default!;
     public DbSet<StockTransferItem> StockTransferItems { get; set; } = default!;
+    public DbSet<TaxRate> TaxRates { get; set; } = default!;
     public DbSet<Warehouse> Warehouses { get; set; } = default!;
     public DbSet<WarehouseProduct> WarehouseProducts { get; set; } = default!;
     public DbSet<WarehouseSummary> WarehouseSummarys { get; set; } = default!;
@@ -81,5 +97,25 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
         }
 
         return await base.SaveChangesAsync(cancellationToken);
+    }
+}
+
+public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
+{
+    public ApplicationDbContext CreateDbContext(string[] args)
+    {
+        // Configuración para tiempo de diseño
+        IConfigurationRoot configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile($"appsettings.Development.json", optional: true)
+            .Build();
+
+        var builder = new DbContextOptionsBuilder<ApplicationDbContext>();
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        builder.UseSqlite(connectionString);
+
+        return new ApplicationDbContext(builder.Options);
     }
 }

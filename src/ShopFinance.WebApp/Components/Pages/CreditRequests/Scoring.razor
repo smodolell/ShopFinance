@@ -1,0 +1,10 @@
+﻿@attribute [Route(PageRoute.Scoring + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Scoring", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.Scoring, "Scoring", 4)]
+
+<h3>Scoring</h3>
+
+@code {
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}

@@ -1,0 +1,190 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Services.InterestRates
+@using ShopFinance.Application.Services.InterestRates.DTOs
+@inject IInterestRateService _interestRateService
+@inject ISnackbar _snackbarService
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="SaveSubmit" id="interestRateForm">
+            <FluentValidationValidator @ref="_fluentValidationValidator" />
+
+            <MudGrid Spacing="2">
+                <!-- Nombre de la Tasa -->
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Nombre de la Tasa *"
+                                  @bind-Value="_model.RateName"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.RateName)">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Tasa Anual -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField Label="Tasa Anual (%) *"
+                                     @bind-Value="_model.AnnualPercentage"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Required="true"
+                                     Immediate="true"
+                                     Format="F2"
+                                     Adornment="Adornment.End"
+                                     AdornmentText="%"
+                                     For="@(() => _model.AnnualPercentage)">
+                    </MudNumericField>
+                </MudItem>
+
+                <!-- Fecha Inicio -->
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Inicio"
+                                   @bind-Date="_model.EffectiveDate"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Required="true"
+                                   Immediate="true"
+                                   DateFormat="dd/MM/yyyy"
+                                   For="@(() => _model.EffectiveDate)">
+                    </MudDatePicker>
+                </MudItem>
+
+                <!-- Fecha Fin (Opcional) -->
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Fin (Opcional)"
+                                   @bind-Date="_model.ExpirationDate"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   DateFormat="dd/MM/yyyy"
+                                   Nullable="true"
+                                   For="@(() => _model.ExpirationDate)">
+                    </MudDatePicker>
+                </MudItem>
+
+                <!-- Estado Activo -->
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_model.IsActive"
+                               Label="Tasa Activa"
+                               Color="Color.Primary" />
+                </MudItem>
+
+                <!-- Información Calculada -->
+                @if (_model.AnnualPercentage > 0)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Elevation="0">
+                            <MudText>Información calculada:</MudText>
+                            <MudText>• Tasa mensual: <strong>@_model.MonthlyPercentage.ToString("F2")%</strong></MudText>
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="SaveSubmit"
+                   Disabled="_isSaving">
+            @(_isSaving ? "Guardando..." : "Guardar")
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="@(() => Cancel())">
+            Cancelar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance? MudDialog { get; set; }
+    [Parameter] public int InterestRateId { get; set; }
+
+    private FluentValidationValidator? _fluentValidationValidator;
+    private InterestRateEditDto _model = new InterestRateEditDto();
+    private bool _isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (InterestRateId > 0)
+        {
+            await LoadInterestRate();
+        }
+        else
+        {
+            // Valores por defecto para nueva tasa
+            _model.EffectiveDate = DateTime.Today;
+            _model.IsActive = true;
+        }
+    }
+
+    private async Task LoadInterestRate()
+    {
+        try
+        {
+            var result = await _interestRateService.GetById(InterestRateId);
+            if (result.IsSuccess)
+            {
+                _model = result.Value;
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al cargar la tasa", Severity.Error);
+                Cancel();
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+            Cancel();
+        }
+    }
+
+    private async Task SaveSubmit()
+    {
+        if (_isSaving) return;
+
+        var isValid = await _fluentValidationValidator!.ValidateAsync();
+        if (!isValid) return;
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _interestRateService.Save(_model);
+
+            if (result.IsSuccess)
+            {
+                var message = InterestRateId == 0
+                    ? "Tasa de interés creada exitosamente"
+                    : "Tasa de interés actualizada exitosamente";
+
+                _snackbarService.Add(message, Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al guardar", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+}

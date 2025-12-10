@@ -4,6 +4,11 @@ using LiteBus.Queries;
 using Microsoft.Extensions.DependencyInjection;
 using ShopFinance.Application.Common.Interfaces;
 using ShopFinance.Application.Common.Services;
+using ShopFinance.Application.Services.Frequencies;
+using ShopFinance.Application.Services.InterestRates;
+using ShopFinance.Application.Services.PaymentTerms;
+using ShopFinance.Application.Services.TaxRates;
+
 namespace ShopFinance.Application;
 
 public static class DependencyInjection
@@ -20,6 +25,11 @@ public static class DependencyInjection
 
         services.AddScoped<ISelectListService, SelectListService>();
         services.AddScoped<ILocalizerService, LocalizerService>();
+
+        services.AddScoped<IInterestRateService, InterestRateService>();
+        services.AddScoped<IFrequencyService, FrequencyService>();
+        services.AddScoped<ITaxRateService, TaxRateService>();
+        services.AddScoped<IPaymentTermService, PaymentTermService>();
 
         return services;
     }

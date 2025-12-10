@@ -1,0 +1,11 @@
+﻿@attribute [Route(PageRoute.Questionnaire + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Cuestionario", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.Questionnaire, "Cuestionario", 2, StatesProviderType = typeof(QuestionnaireStatesProvider))]
+
+<h3>Questionnaire</h3>
+
+@code {
+
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}

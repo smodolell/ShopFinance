@@ -70,8 +70,8 @@ public class AccessPointAttribute : Attribute
                 return AppMenu.MenuCobranzaIcon;
             case AppMenu.MenuPortalCliente:
                 return AppMenu.MenuPortalClienteIcon;
-            case AppMenu.MenuTest:
-                return AppMenu.MenuTestIcon;
+            case AppMenu.MenuWarehouse:
+                return AppMenu.MenuWarehouseIcon;
             case AppMenu.MenuGeneral:
                 return AppMenu.MenuGeneralIcon;
             case AppMenu.MenuAsignacion:

@@ -1,0 +1,7 @@
+﻿@attribute [Route(PageRoute.PaymentTerms)]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Plazos de Pago")]
+@rendermode RenderMode.InteractiveServer
+@using ShopFinance.WebApp.Components.Pages.PaymentTerms.Com
+
+<PageHeader Title="Plazos de Pago" Icon="@AppMenu.MenuCatalogIcon" />
+<PaymentTermList></PaymentTermList>

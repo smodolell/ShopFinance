@@ -1,12 +1,21 @@
-﻿namespace ShopFinance.Domain.Enums;
+﻿using System.ComponentModel;
+
+namespace ShopFinance.Domain.Enums;
 
 public enum MovementSource
 {
-    Purchase = 0,    // Compra de productos
-    Sale = 1,        // Venta a cliente
-    Manual = 2,      // Ajuste manual
-    Production = 3,  // Producción interna
-    Damage = 4,      // Daño o pérdida
-    Return = 5,      // Devolución de cliente
-    Transfer = 6     // Transferencia entre almacenes
+    [Description("Compra de productos")]
+    Purchase = 0,  
+    [Description("Venta a cliente")]
+    Sale = 1,     
+    [Description("Ajuste manual")]
+    Manual = 2,
+    [Description("Producción interna")]
+    Production = 3, 
+    [Description("Daño o pérdida")]
+    Damage = 4,     
+    [Description("Devolución de cliente")]
+    Return = 5,     
+    [Description("Transferencia entre almacenes")]
+    Transfer = 6    
 }

@@ -1,0 +1,10 @@
+﻿@attribute [Route(PageRoute.Quotation + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Cotizador", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.Quotation, "Cotizador", 3, IsRequired = true)]
+
+<h3>Quotation</h3>
+
+@code {
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}

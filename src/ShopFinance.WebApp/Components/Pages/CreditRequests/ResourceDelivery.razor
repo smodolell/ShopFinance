@@ -1,0 +1,10 @@
+﻿@attribute [Route(PageRoute.ResourceDelivery + "/{CreditRequestId:int}")]
+@attribute [AccessPoint(AppMenu.MenuOtrorgamiento, "Entrega de Recursos", AccessPointType.Page)]
+@attribute [Phase(PhaseCodes.ResourceDelivery, "Entrega de Recursos", 8)]
+
+<h3>ResourceDelivery</h3>
+
+@code {
+    [Parameter]
+    public Guid CreditRequestId { get; set; }
+}
