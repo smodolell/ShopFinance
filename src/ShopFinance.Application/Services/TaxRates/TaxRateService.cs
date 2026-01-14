@@ -194,7 +194,7 @@ public class TaxRateService : ITaxRateService
                 }
             }
 
-            TaxRate taxRate;
+            TaxRate? taxRate;
 
             if (model.TaxRateId == 0)
             {

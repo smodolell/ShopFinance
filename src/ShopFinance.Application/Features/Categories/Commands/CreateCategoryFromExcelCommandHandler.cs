@@ -36,7 +36,7 @@ internal class CreateCategoryFromExcelCommandHandler
 
             using var workbook = new XLWorkbook(stream);
             var worksheet = workbook.Worksheet(1); // Primera hoja
-            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); // Saltar encabezados
+            var rows = worksheet.RangeUsed()!.RowsUsed().Skip(1); // Saltar encabezados
 
             var categoriesToAdd = new List<Category>();
             var rowNumber = 2;

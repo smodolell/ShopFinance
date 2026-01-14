@@ -1,0 +1,52 @@
+﻿@attribute [Route(PageRoute.UISections)]
+@attribute [AccessPoint(AppMenu.MenuDevelopment, "Secciones")]
+@rendermode RenderMode.InteractiveServer
+@using ShopFinance.WebApp.Components.Shared.Section
+<FormSection Title="Configuración de Fase">
+    <MudGrid>
+        <SubSection Title="Fases Iniciales y Finales" Description="asdasdasd asdasdas asdasdasd" Icon="@Icons.Material.Filled.BubbleChart">
+            <ToolBar>
+                <MudToolBar>
+                    <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Class="mr-5" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Add" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Edit" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Remove" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Notifications" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.PeopleAlt" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.MoreVert" Color="Color.Inherit" />
+                </MudToolBar>
+            </ToolBar>
+        </SubSection>
+        <MudItem>
+            <MudTextField @bind-Value="_model.PlanName"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Label="Nombre del Plan"
+                          For="@(() => _model.PlanName)"
+                          Disabled="_isSubmitting"
+                          HelperText="Nombre único del plan de cotización">
+            </MudTextField>
+        </MudItem>
+        <SubSection Title="Configuración de fases obligatorias" Icon="@Icons.Material.Filled.PlayArrow">
+            <ToolBar>
+                <MudButton Size="Size.Small"
+                           Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Add">
+                    Agregar
+                </MudButton>
+            </ToolBar>
+        </SubSection>
+    </MudGrid>
+
+</FormSection>
+
+@code {
+    private Test _model = new();
+    private bool _isSubmitting;
+    public class Test
+    {
+        public string PlanName { get; set; }
+        public int MyProperty { get; set; }
+    }
+
+}

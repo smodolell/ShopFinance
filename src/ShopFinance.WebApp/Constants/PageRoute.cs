@@ -64,12 +64,14 @@ internal static class PageRoute
     public const string InterestRates = Prefix + "interest_rates";
     public const string Frequencies = Prefix + "frequencies";
     public const string PaymentTerms = Prefix + "payment_terms";
+    public const string TaxRates = Prefix + "tax_rates";
 
 
 
     public const string AdminEmpresa = Prefix + "home";
     public const string Login = "/login";
     public const string Home = "/";
+    public const string UISections = Prefix + "section";
 
 
 }

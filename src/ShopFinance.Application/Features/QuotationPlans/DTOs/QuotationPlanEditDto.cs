@@ -1,17 +1,39 @@
-﻿using ShopFinance.Domain.Entities;
+﻿using ShopFinance.Application.Features.QuotationPlans.Commands;
+using ShopFinance.Domain.Entities;
 
-namespace ShopFinance.Application.Features.QuotationPlans.Commands;
+namespace ShopFinance.Application.Features.QuotationPlans.DTOs;
 
-public class CreateOrUpdateQuotationPlanCommandValidator : AbstractValidator<CreateOrUpdateQuotationPlanCommand>
+public class QuotationPlanEditDto
 {
-    public CreateOrUpdateQuotationPlanCommandValidator()
+    public int QuotationPlanId { get; set; }
+    public int? TaxRateId { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string PlanName { get; set; } = string.Empty;
+    public DateTime? InitialEffectiveDate { get; set; }
+    public DateTime? FinalEffectiveDate { get; set; }
+    public int? PhaseIdInitial { get; set; }
+    public int? PhaseIdFinal { get; set; }
+    public bool Active { get; set; }
+    public List<QuotationPlanPhaseDto> Phases { get; set; } = new();
+    public List<QuotationPlanFrequencyDto> Frequencies { get; set; } = new();
+    public List<QuotationPlanPaymentTermDto> PaymentTerms { get; set; } = new();
+}
+
+
+public class QuotationPlanEditDtoValidator : AbstractValidator<QuotationPlanEditDto>
+{
+    public QuotationPlanEditDtoValidator()
     {
-        // Reglas para PlanName
+        RuleFor(x => x.Code)
+            .NotEmpty();
         RuleFor(x => x.PlanName)
             .NotEmpty().WithMessage("El nombre del plan es requerido")
             .MaximumLength(200).WithMessage("El nombre del plan no puede exceder los 200 caracteres")
             .Matches(@"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_]+$")
             .WithMessage("El nombre del plan solo puede contener letras, números, espacios, guiones y guiones bajos");
+
+        RuleFor(x => x.TaxRateId)
+              .GreaterThan(0).WithMessage("Debe seleccionar una tasa de impuesto");
 
         // Reglas para fechas
         RuleFor(x => x.InitialEffectiveDate)
@@ -55,6 +77,28 @@ public class CreateOrUpdateQuotationPlanCommandValidator : AbstractValidator<Cre
                 return true; // Ajusta según tus necesidades
             })
             .WithMessage("El plan debe contener exactamente una fase inicial y una fase final");
+
+        RuleFor(x => x.Frequencies)
+           .Must(frequencies => frequencies.Select(f => f.FrequencyId).Distinct().Count() == frequencies.Count)
+           .WithMessage("No se pueden incluir frecuencias duplicadas en el plan");
+
+        RuleFor(x => x.PaymentTerms)
+           .NotEmpty().WithMessage("Debe asignar al menos un plazo de pago al plan")
+           .Must(paymentTerms => paymentTerms.Any(pt => pt.Active))
+           .WithMessage("Debe tener al menos un plazo de pago activo");
+
+        RuleFor(x => x.PaymentTerms)
+           .Must(paymentTerms => paymentTerms.Select(pt => pt.PaymentTermId).Distinct().Count() == paymentTerms.Count)
+           .WithMessage("No se pueden incluir plazos de pago duplicados en el plan");
+
+        RuleFor(x => x)
+           .Must(x => x.Frequencies.Any(f => f.IsDefault && f.Active))
+           .WithMessage("Debe seleccionar al menos una frecuencia como predeterminada");
+
+        // Validación: no puede haber más de una frecuencia default
+        RuleFor(x => x)
+         .Must(x => x.Frequencies.Count(f => f.IsDefault) <= 1)
+         .WithMessage("Solo puede haber una frecuencia predeterminada");
     }
 
     private async Task<List<Phase>> GetPhasesByIds(List<int> phaseIds, CancellationToken cancellationToken)

@@ -1,0 +1,266 @@
+﻿@rendermode RenderMode.InteractiveServer
+@using ShopFinance.Application.Services.TaxRates
+@using ShopFinance.Application.Services.TaxRates.DTOs
+@inject ITaxRateService _taxRateService
+@inject ISnackbar _snackbarService
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="SaveSubmit" id="taxRateForm">
+            <FluentValidationValidator @ref="_fluentValidationValidator" />
+
+            <MudGrid Spacing="2">
+                <!-- Nombre -->
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Nombre del Impuesto *"
+                                  @bind-Value="_model.Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Name)"
+                                  HelperText="Ej: IVA, IGV, GST, VAT">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Código -->
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Código *"
+                                  @bind-Value="_model.Code"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Required="true"
+                                  Immediate="true"
+                                  For="@(() => _model.Code)"
+                                  HelperText="Mayúsculas y números (ej: IVA16, VAT21, IGV18)">
+                    </MudTextField>
+                </MudItem>
+
+                <!-- Porcentaje -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField Label="Porcentaje (%) *"
+                                     @bind-Value="_model.Percentage"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Required="true"
+                                     Immediate="true"
+                                     Format="F2"
+                                     Min="0"
+                                     Max="100"
+                                     Adornment="Adornment.End"
+                                     AdornmentText="%"
+                                     For="@(() => _model.Percentage)"
+                                     HelperText="0% a 100% (máximo 2 decimales)">
+                    </MudNumericField>
+                </MudItem>
+
+                <!-- Fecha Inicio -->
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Inicio"
+                                   @bind-Date="_model.EffectiveDate"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Required="true"
+                                   ImmediateText="true"
+                                   DateFormat="dd/MM/yyyy"
+                                   For="@(() => _model.EffectiveDate)">
+                    </MudDatePicker>
+                </MudItem>
+
+                <!-- Fecha Fin (Opcional) -->
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Fin (Opcional)"
+                                   @bind-Date="_model.ExpirationDate"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   DateFormat="dd/MM/yyyy"
+                                   Clearable="true"
+                                   For="@(() => _model.ExpirationDate)"
+                                   HelperText="Dejar vacío si no tiene fecha de expiración">
+                    </MudDatePicker>
+                </MudItem>
+
+                <!-- Estado Activo -->
+                <MudItem xs="12" md="6">
+                    <MudSwitch @bind-Value="_model.IsActive"
+                               Label="Tasa Activa"
+                               Color="Color.Primary" />
+                </MudItem>
+
+                <!-- Información de vigencia -->
+                <MudItem xs="12">
+                    @{
+                        var isCurrent = _model.IsActive &&
+                                       _model.EffectiveDate <= DateTime.Today &&
+                                       (!_model.ExpirationDate.HasValue || _model.ExpirationDate >= DateTime.Today);
+                        var severity = isCurrent ? Severity.Success : Severity.Info;
+                        var message = isCurrent ?
+                            "✓ Esta tasa está vigente actualmente" :
+                            "Esta tasa no está vigente actualmente";
+                    }
+                    <MudAlert Severity="@severity" Variant="Variant.Filled" Elevation="0" Dense="true">
+                        <MudText Typo="Typo.body2">@message</MudText>
+                        @if (_model.ExpirationDate.HasValue && _model.ExpirationDate < DateTime.Today)
+                        {
+                            <MudText Typo="Typo.body2"><small>La tasa expiró el @_model.ExpirationDate.Value.ToString("dd/MM/yyyy")</small></MudText>
+                        }
+                        else if (_model.EffectiveDate > DateTime.Today)
+                        {
+                            <MudText Typo="Typo.body2"><small>La tasa entrará en vigencia el @_model.EffectiveDate.Value.ToString("dd/MM/yyyy")</small></MudText>
+                        }
+                    </MudAlert>
+                </MudItem>
+
+                <!-- Sugerencias de tasas comunes -->
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Text" Elevation="0" Dense="true">
+                        <MudText Typo="Typo.body2"><strong>Tasas comunes:</strong></MudText>
+                        <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap" Justify="Justify.FlexStart" Class="mt-1">
+                            @foreach (var rate in GetCommonTaxRates())
+                            {
+                                <MudChip T="CommonTaxRate" Color="Color.Primary" Variant="Variant.Filled"
+                                         OnClick="@(() => SetCommonRate(rate))"
+                                         Class="ma-1">
+                                    @rate.Name (@rate.Percentage%)
+                                </MudChip>
+                            }
+                        </MudStack>
+                    </MudAlert>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="SaveSubmit"
+                   Disabled="_isSaving">
+            @(_isSaving ? "Guardando..." : "Guardar")
+        </MudButton>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="@(() => Cancel())">
+            Cancelar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance? MudDialog { get; set; }
+    [Parameter] public int TaxRateId { get; set; }
+
+    private FluentValidationValidator? _fluentValidationValidator;
+    private TaxRateEditDto _model = new TaxRateEditDto();
+    private bool _isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (TaxRateId > 0)
+        {
+            await LoadTaxRate();
+        }
+        else
+        {
+            // Valores por defecto para nueva tasa
+            _model.IsActive = true;
+            _model.EffectiveDate = DateTime.Today;
+            _model.Percentage = 16.00m; // Valor común por defecto (IVA en México)
+        }
+    }
+
+    private async Task LoadTaxRate()
+    {
+        try
+        {
+            var result = await _taxRateService.GetById(TaxRateId);
+            if (result.IsSuccess)
+            {
+                _model = result.Value;
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al cargar la tasa", Severity.Error);
+                Cancel();
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+            Cancel();
+        }
+    }
+
+    private async Task SaveSubmit()
+    {
+        if (_isSaving) return;
+
+        var isValid = await _fluentValidationValidator!.ValidateAsync();
+        if (!isValid) return;
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _taxRateService.Save(_model);
+
+            if (result.IsSuccess)
+            {
+                var message = TaxRateId == 0
+                    ? "Tasa de impuesto creada exitosamente"
+                    : "Tasa de impuesto actualizada exitosamente";
+
+                _snackbarService.Add(message, Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _snackbarService.Add(result.Errors.FirstOrDefault() ?? "Error al guardar", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbarService.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private List<CommonTaxRate> GetCommonTaxRates()
+    {
+        return new List<CommonTaxRate>
+    {
+            new() { Name = "IVA", Code = "IVA16", Percentage = 16.00m },
+            new() { Name = "IVA Reducido", Code = "IVA8", Percentage = 8.00m },
+            new() { Name = "IGV", Code = "IGV18", Percentage = 18.00m },
+            new() { Name = "VAT", Code = "VAT21", Percentage = 21.00m },
+            new() { Name = "Exento", Code = "EXENTO", Percentage = 0.00m }
+        };
+    }
+
+    private void SetCommonRate(CommonTaxRate commonRate)
+    {
+        _model.Name = commonRate.Name;
+        _model.Code = commonRate.Code;
+        _model.Percentage = commonRate.Percentage;
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+
+    private class CommonTaxRate
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public decimal Percentage { get; set; }
+    }
+}

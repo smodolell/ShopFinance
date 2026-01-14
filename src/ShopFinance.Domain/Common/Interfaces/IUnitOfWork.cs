@@ -1,5 +1,4 @@
 using ShopFinance.Domain.Repositories;
-using ShopFinance.Domain.Repositories;
 
 namespace ShopFinance.Domain.Common.Interfaces;
 

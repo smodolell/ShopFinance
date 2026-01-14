@@ -1,0 +1,27 @@
+﻿
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-4 mb-4">
+    <!-- Sección izquierda: icono, título y descripción -->
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+        <MudIcon Icon="@Icon" />
+        <MudText Typo="Typo.h6">@Title</MudText>
+        <MudText Typo="Typo.body2">@Description</MudText>
+    </MudStack>
+
+    <!-- Sección derecha: ToolBar -->
+    @if (ToolBar != null)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            @ToolBar
+        </MudStack>
+    }
+</MudStack>
+
+<MudDivider />
+@code {
+    @code {
+        [Parameter] public string Title { get; set; } = "Sección";
+        [Parameter] public string Description { get; set; } = "";
+        [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Info;
+        [Parameter] public RenderFragment? ToolBar { get; set; }
+    }
+}

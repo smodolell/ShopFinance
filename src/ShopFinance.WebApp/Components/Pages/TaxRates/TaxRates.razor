@@ -1,0 +1,11 @@
+﻿@attribute [Route(PageRoute.TaxRates)]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Tasas de Impuesto")]
+@rendermode RenderMode.InteractiveServer
+@using ShopFinance.WebApp.Components.Pages.TaxRates.Com
+
+<PageHeader Title="Tasas de Impuesto" Icon="@AppMenu.MenuCatalogIcon" />
+<TaxRateList></TaxRateList>
+
+@code {
+
+}

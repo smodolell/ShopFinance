@@ -98,6 +98,7 @@ public class LocalFileUploadService : IUploadService
             {
                 _logger.LogWarning("Archivo no encontrado para eliminar: {PhysicalPath}", physicalPath);
             }
+            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -171,6 +172,7 @@ public class LocalFileUploadService : IUploadService
             {
                 _logger.LogWarning("Archivo existente será sobrescrito: {FilePath}", filePath);
                 File.Delete(filePath);
+                await Task.CompletedTask;
             }
             else
             {

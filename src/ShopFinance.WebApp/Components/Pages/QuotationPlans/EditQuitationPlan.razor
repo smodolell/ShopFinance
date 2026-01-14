@@ -1,0 +1,22 @@
+﻿@attribute [Route(PageRoute.EditQuotationPlan + "/{QuotationPlanId:int}")]
+@attribute [AccessPoint(AppMenu.MenuCatalog, "Editar Producto", AccessPointType.Page)]
+@using ShopFinance.WebApp.Components.QuotationPlans
+
+<PageHeader Title="Editar Plan de Cotización" Icon="@AppMenu.MenuConfiguracionIcon">
+    <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+</PageHeader>
+
+<QuotationPlansEdit QuotationPlanId="QuotationPlanId" />
+
+@code {
+    [Parameter]
+    public int QuotationPlanId { get; set; }
+
+    #region Breadcrumbs
+    private readonly List<BreadcrumbItem> _breadcrumbItems = new()
+{
+        new BreadcrumbItem("Planes de Cotización", href: PageRoute.QuotationPlans),
+        new BreadcrumbItem("Editar Plan", href: null, disabled: true)
+    };
+    #endregion
+}
